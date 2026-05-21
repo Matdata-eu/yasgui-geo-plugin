@@ -1,7 +1,8 @@
 {
-  "name": "yasgui-geo-tg",
-  "version": "0.0.2",
-  "description": "A Yasgui plugin to add a geo tab",
+  "name": "@matdata/yasgui-geo-plugin",
+  "private": false,
+  "version": "0.1.0",
+  "description": "A Yasgui plugin to add a result viewer as a geo tab",
   "keywords": [
     "yasgui",
     "geosparql",
@@ -11,16 +12,16 @@
     "geometry",
     "ontology"
   ],
-  "homepage": "https://github.com/Thib-G/yasgui-geo-tg#readme",
+  "homepage": "https://github.com/Matdata-eu/yasgui-geo-plugin#readme",
   "bugs": {
-    "url": "https://github.com/Thib-G/yasgui-geo-tg/issues"
+    "url": "https://github.com/Matdata-eu/yasgui-geo-plugin/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Thib-G/yasgui-geo-tg.git"
+    "url": "git+https://github.com/Matdata-eu/yasgui-geo-plugin.git"
   },
   "license": "MIT",
-  "author": "Thibaut Goelff",
+  "author": "Thibaut Goelff & Mathias Vanden Auweele",
   "type": "module",
   "main": "index.js",
   "module": "index.js",

@@ -1,14 +1,14 @@
 // Build a browser-friendly IIFE bundle for use via <script> tags.
-// Exposes window.YasguiGeoTg with the default export attached as `.default`.
+// Exposes window.YasguiGeoPlugin with the default export attached as `.default`.
 
 import { build } from 'esbuild';
 
 await build({
   entryPoints: ['index.js'],
-  outfile: 'dist/yasgui-geo-tg.min.js',
+  outfile: 'dist/yasgui-geo-plugin.min.js',
   bundle: true,
   format: 'iife',
-  globalName: 'YasguiGeoTg',
+  globalName: 'YasguiGeoPlugin',
   minify: true,
   sourcemap: true,
   target: ['es2020'],
