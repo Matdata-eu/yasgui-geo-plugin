@@ -2,8 +2,8 @@ import L from 'leaflet';
 
 export const DEFAULT_STYLE_STATE = {
   color: '#3388ff',
-  opacity: 0.7,
-  fillOpacity: 0.5,
+  opacity: 0.8,
+  fillOpacity: 0.7,
   weight: 2,
   radius: 4,
 };
