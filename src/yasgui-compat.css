@@ -1,0 +1,20 @@
+/* Fix Leaflet control appearance overridden by @matdata/yasgui CSS */
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  text-decoration: none;
+}
+
+.leaflet-bar {
+  background-color: #fff;
+}
+
+/* @matdata/yasgui bundles leaflet.css but ships without the referenced PNG assets,
+   leaving the layers-toggle with a broken background-image. Re-declare it using
+   the leaflet package images (inlined as data URLs in the published dist build). */
+.leaflet-control-layers-toggle {
+  background-image: url('../node_modules/leaflet/dist/images/layers.png');
+}
+.leaflet-retina .leaflet-control-layers-toggle {
+  background-image: url('../node_modules/leaflet/dist/images/layers-2x.png');
+  background-size: 26px 26px;
+}

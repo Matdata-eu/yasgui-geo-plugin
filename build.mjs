@@ -23,4 +23,16 @@ await build({
   logLevel: 'info',
 });
 
-console.log('Built dist/yasgui-geo-tg.min.js');
+console.log('Built dist/yasgui-geo-plugin.min.js');
+
+await build({
+  entryPoints: ['src/yasgui-compat.css'],
+  outfile: 'dist/yasgui-compat.css',
+  bundle: true,
+  loader: {
+    '.png': 'dataurl',
+  },
+  logLevel: 'info',
+});
+
+console.log('Built dist/yasgui-compat.css');

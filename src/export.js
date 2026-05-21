@@ -136,7 +136,7 @@ export const addExportControl = (map, getFeatureCollection) => {
       const btn = document.createElement('a');
       btn.href = '#';
       btn.title = 'Download map data';
-      btn.textContent = '⬇';
+      btn.textContent = '💾';
       btn.style.fontSize = '16px';
       btn.style.textAlign = 'center';
       btn.style.textDecoration = 'none';
