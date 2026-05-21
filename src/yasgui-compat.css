@@ -1,4 +1,5 @@
 /* Fix Leaflet control appearance overridden by @matdata/yasgui CSS */
+.yasgui-geo-cluster,
 .leaflet-bar a,
 .leaflet-bar a:hover {
   text-decoration: none;
