@@ -57,6 +57,8 @@ export const addMeasureControl = (map) => {
         icon: L.divIcon({
           className: 'yasgui-geo-measure-label',
           html: `<div style="background:var(--yasgui-bg-primary,white);color:var(--yasgui-text-primary,#333);padding:2px 6px;border:1px solid ${color};font:11px monospace;white-space:nowrap;">${totalKm().toFixed(3)} km</div>`,
+          iconSize: null,
+          iconAnchor: [0, 0],
         }),
       }).addTo(layer);
     }
