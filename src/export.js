@@ -194,6 +194,7 @@ export const addExportControl = (map, getFeatureCollection) => {
 
       menu.append(
         mk('Copy GeoJSON', () => copyGeoJSONToClipboard(getFeatureCollection()), 'Copy GeoJSON to clipboard'),
+        mk('Save as GeoJSON', () => triggerDownload('results.geojson', toGeoJSON(getFeatureCollection()), 'application/geo+json'), 'Download GeoJSON file'),
         mk('Save as PNG', () => downloadMapPNG(map), 'Download the current map as PNG'),
         mk('Save as KML', () => triggerDownload('results.kml', toKML(getFeatureCollection()), 'application/vnd.google-earth.kml+xml')),
         mk('Save as CSV', () => triggerDownload('results.csv', toCSV(getFeatureCollection()), 'text/csv')),
