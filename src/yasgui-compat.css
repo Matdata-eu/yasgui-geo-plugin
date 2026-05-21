@@ -2,10 +2,11 @@
 .leaflet-bar a,
 .leaflet-bar a:hover {
   text-decoration: none;
+  color: #000;
 }
-
 .leaflet-bar {
   background-color: #fff;
+  color: #000;
 }
 
 /* @matdata/yasgui bundles leaflet.css but ships without the referenced PNG assets,
