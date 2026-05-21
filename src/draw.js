@@ -61,7 +61,7 @@ export const enableDrawing = (map, { onWKT, crs } = {}) => {
       const rectBtn = mkBtn('⬛', 'Draw rectangle filter', (btn) => {
         if (activeHandler) { deactivateAll(); clearActive(); return; }
         clearActive();
-        const handler = new L.Draw.Rectangle(map, { shapeOptions: { color: '#3388ff', weight: 2 } });
+        const handler = new L.Draw.Rectangle(map, { showArea: false, shapeOptions: { color: '#3388ff', weight: 2 } });
         activeHandler = handler;
         btn.style.background = 'rgba(51,136,255,0.15)';
         // Delay enable() so the button's mouseup doesn't trigger an immediate rectangle finish
