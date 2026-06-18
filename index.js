@@ -315,6 +315,7 @@ const createGeojson = async (bindings, column) => ({
   type: 'FeatureCollection',
   features: (await Promise.all(
     bindings.map(async (item) => {
+      if (!item[column]) return null; // Skip rows where this binding is absent (OPTIONAL)
       const converter = conversions[item[column].datatype];
       if (!converter) {
         return {
@@ -337,6 +338,71 @@ const createGeojson = async (bindings, column) => ({
     }),
   )).filter(feature => feature !== null),
 });
+
+/**
+ * Recursively extract all [lon, lat] coordinate pairs from a GeoJSON geometry.
+ * @param {Object} geometry
+ * @returns {number[][]}
+ */
+const extractAllCoords = (geometry) => {
+  if (!geometry) return [];
+  if (geometry.type === 'GeometryCollection') {
+    return geometry.geometries.flatMap(extractAllCoords);
+  }
+  const result = [];
+  const collect = (c) => {
+    if (!Array.isArray(c)) return;
+    if (typeof c[0] === 'number') result.push(c);
+    else c.forEach(collect);
+  };
+  if (geometry.coordinates) collect(geometry.coordinates);
+  return result;
+};
+
+/**
+ * Compute a fit-bounds bounding box from per-feature Leaflet bounds, using
+ * a 3 × IQR fence on feature centers to exclude geographic
+ * outliers caused by mismatched CRS axis order or bad data.
+ * Falls back to the full union when all features are consistent or there
+ * are too few features to apply the heuristic.
+ * @param {L.LatLngBounds[]} featureBounds
+ * @returns {L.LatLngBounds|null}
+ */
+const computeRobustFitBounds = (featureBounds) => {
+  const valid = featureBounds.filter(b => b.isValid());
+  if (valid.length === 0) return null;
+  if (valid.length <= 2) {
+    return valid.reduce((acc, b) => acc.extend(b), L.latLngBounds([]));
+  }
+  const centers = valid.map(b => b.getCenter());
+  const sortedLats = centers.map(c => c.lat).sort((a, b) => a - b);
+  const sortedLons = centers.map(c => c.lng).sort((a, b) => a - b);
+  const n = sortedLats.length;
+  const q1Lat = sortedLats[Math.floor(n * 0.25)];
+  const q3Lat = sortedLats[Math.floor(n * 0.75)];
+  const q1Lon = sortedLons[Math.floor(n * 0.25)];
+  const q3Lon = sortedLons[Math.floor(n * 0.75)];
+  // 3× IQR is conservative enough to include legitimate geographic extremes
+  // (e.g. northern Scandinavia in a European dataset) while still excluding
+  // CRS-swap outliers that land thousands of kilometres away.
+  // MIN_FENCE guards against floating-point near-zero IQR collapsing the
+  // window so tightly that reprojected duplicates are incorrectly excluded.
+  const MULT = 3;
+  const MIN_FENCE = 0.001; // degrees (~100 m)
+  const minLat = q1Lat - Math.max(MULT * (q3Lat - q1Lat), MIN_FENCE);
+  const maxLat = q3Lat + Math.max(MULT * (q3Lat - q1Lat), MIN_FENCE);
+  const minLon = q1Lon - Math.max(MULT * (q3Lon - q1Lon), MIN_FENCE);
+  const maxLon = q3Lon + Math.max(MULT * (q3Lon - q1Lon), MIN_FENCE);
+  const robust = L.latLngBounds([]);
+  for (let i = 0; i < valid.length; i++) {
+    const { lat, lng } = centers[i];
+    if (lat >= minLat && lat <= maxLat && lng >= minLon && lng <= maxLon) {
+      robust.extend(valid[i]);
+    }
+  }
+  // Fall back to full union if the fence excluded everything
+  return robust.isValid() ? robust : valid.reduce((acc, b) => acc.extend(b), L.latLngBounds([]));
+};
 
 /**
  * Default plugin options. Override per-instance via Yasgui config:
@@ -390,6 +456,7 @@ class GeoPlugin {
     this.yasr = yasr;
     this.priority = 30;
     this.label = 'Geo';
+    this.helpReference = 'https://yasgui-doc.matdata.eu/docs/user-guide#geo-plugin';
     this.geometryColumns = [];
     this.options = {
       ...DEFAULT_OPTIONS,
@@ -571,6 +638,7 @@ class GeoPlugin {
 
     const palette = ['#3388ff', '#e6550d', '#31a354', '#756bb1', '#d62728', '#17becf'];
     const allBounds = L.latLngBounds([]);
+    const allFeatureBounds = []; // Per-feature bounds for robust fitBounds
     const prepared = [];
 
     for (const [idx, geometryColumn] of this.geometryColumns.entries()) {
@@ -607,6 +675,18 @@ class GeoPlugin {
         })
         : featureCollection;
       this._featureCollections.set(colName, visibleCollection);
+      // Collect per-feature bounds for outlier-resistant fitBounds
+      for (const feature of (visibleCollection.features || [])) {
+        if (!feature.geometry) continue;
+        const coords = extractAllCoords(feature.geometry);
+        if (coords.length === 0) continue;
+        const lats = coords.map(([, lat]) => lat);
+        const lons = coords.map(([lon]) => lon);
+        allFeatureBounds.push(L.latLngBounds(
+          [Math.min(...lats), Math.min(...lons)],
+          [Math.max(...lats), Math.max(...lons)],
+        ));
+      }
       const layerColor = palette[idx % palette.length];
       const DEFAULT_COLOR = opts.defaultColor === DEFAULT_OPTIONS.defaultColor
         ? layerColor
@@ -721,7 +801,12 @@ class GeoPlugin {
       this.map.invalidateSize();
       if (!this._mapFitted && allBounds.isValid()) {
         this._mapFitted = true;
-        this.map.fitBounds(allBounds, { padding: [20, 20], maxZoom: opts.maxZoom });
+        const fitB = computeRobustFitBounds(allFeatureBounds) || allBounds;
+        // animate: false ensures zoomend/moveend fire synchronously so
+        // MarkerClusterGroup re-renders immediately rather than waiting for
+        // the CSS transition to complete (~250-500 ms), which caused clusters
+        // to be invisible until the user manually toggled the display mode.
+        this.map.fitBounds(fitB, { padding: [20, 20], maxZoom: opts.maxZoom, animate: false });
       }
     }, 100);
   }
@@ -767,7 +852,5 @@ class GeoPlugin {
     };
   }
 }
-
-GeoPlugin.helpReference = 'https://yasgui-doc.matdata.eu/docs/user-guide#geo-plugin';
 
 export default GeoPlugin;

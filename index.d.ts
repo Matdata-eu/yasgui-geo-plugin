@@ -87,6 +87,7 @@ export default class GeoPlugin {
   static readonly hideFromSelection: boolean;
   label: string;
   priority: number;
+  helpReference: string;
   options: Required<GeoPluginOptions>;
   constructor(yasr: YasrLike);
   draw(): Promise<void>;
