@@ -456,7 +456,7 @@ class GeoPlugin {
     this.yasr = yasr;
     this.priority = 30;
     this.label = 'Geo';
-    this.helpReference = 'https://yasgui-doc.matdata.eu/docs/user-guide#geo-plugin';
+    this.helpReference = 'https://matgui-doc.matdata.eu/docs/user-guide#geo-plugin';
     this.geometryColumns = [];
     this.options = {
       ...DEFAULT_OPTIONS,
