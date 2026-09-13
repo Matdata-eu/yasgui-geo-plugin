@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { formatHashValue, mergeGeoHashParam, parseHashValue } from '../src/permalink.js';
+import { formatHashValue, mergeGeoHashParam, parseHashValue, bindHashState } from '../src/permalink.js';
+
+const makeMapMock = () => ({
+  setView() { return this; },
+  on() { return this; },
+  off() { return this; },
+  hasLayer() { return false; },
+  removeLayer() { return this; },
+  getCenter() { return { lat: 0, lng: 0 }; },
+  getZoom() { return 1; },
+});
 
 describe('permalink helpers', () => {
   it('formats and parses map view with visible layers', () => {
@@ -27,5 +37,22 @@ describe('permalink helpers', () => {
 
   it('returns null for invalid geo hash values', () => {
     expect(parseHashValue('bad')).toBeNull();
+  });
+});
+
+describe('bindHashState restore signalling', () => {
+  it('reports restoredView=true when a geo hash is present', () => {
+    window.location.hash = '#geo=8/50.00000/4.00000/openStreetMap';
+    const handle = bindHashState(makeMapMock(), { basemaps: {} });
+    expect(handle.restoredView).toBe(true);
+    handle.dispose();
+    window.location.hash = '';
+  });
+
+  it('reports restoredView=false when no geo hash is present', () => {
+    window.location.hash = '';
+    const handle = bindHashState(makeMapMock(), { basemaps: {} });
+    expect(handle.restoredView).toBe(false);
+    handle.dispose();
   });
 });

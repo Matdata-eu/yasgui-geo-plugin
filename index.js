@@ -210,7 +210,31 @@ const swapLatLon = (geometry) => {
   return { ...geometry, coordinates: swapCoords(geometry.coordinates) };
 };
 
-const parseWKT = async (wkt) => {
+/**
+ * Normalize a parsed GeoJSON geometry, collapsing empty geometries to null so
+ * they are skipped cleanly during rendering. betterknown returns `null` for
+ * `... EMPTY` WKT when parsed plainly, but returns degenerate geometries with
+ * empty `coordinates` (e.g. `{type:'Point', coordinates:[]}`) when the `proj`
+ * option is passed — those crash Leaflet with "Invalid LatLng object".
+ * Recurses into GeometryCollection, dropping empty sub-geometries.
+ *
+ * @param {Object|null} geometry - GeoJSON geometry object
+ * @returns {Object|null} the geometry, or null when it carries no coordinates
+ */
+const normalizeGeometry = (geometry) => {
+  if (!geometry) return null;
+  if (geometry.type === 'GeometryCollection') {
+    const geometries = (geometry.geometries || [])
+      .map(normalizeGeometry)
+      .filter((g) => g !== null);
+    return geometries.length ? { ...geometry, geometries } : null;
+  }
+  const coords = geometry.coordinates;
+  if (!Array.isArray(coords) || coords.length === 0) return null;
+  return geometry;
+};
+
+const parseWKTRaw = async (wkt) => {
   const trimmed = wkt.trimStart();
 
   // CRS84 — longitude/latitude, WGS84. Treat as plain WKT.
@@ -270,6 +294,13 @@ const parseWKT = async (wkt) => {
 }
 
 /**
+ * Parse a WKT literal (optionally CRS-prefixed) into a WGS84 GeoJSON geometry,
+ * with empty geometries normalized to null.
+ * @param {string} wkt
+ * @returns {Promise<Object|null>}
+ */
+const parseWKT = async (wkt) => normalizeGeometry(await parseWKTRaw(wkt));
+
 /**
  * Detect the CRS URI used in a geometry column by scanning binding values for a
  * leading <uri> prefix. Returns the first CRS URI found, or null for plain WKT.
@@ -562,6 +593,10 @@ class GeoPlugin {
             }
           },
         });
+        // A restored permalink view is an explicit user intent (shared link);
+        // suppress this draw's automatic fit-to-data so it isn't clobbered by
+        // the deferred moveend the restore emits once the map is sized.
+        if (this.hashState.restoredView) this._mapFitted = true;
       }
       if (opts.showCoordinates) addCoordinateDisplay(map);
       if (opts.measure) addMeasureControl(map);

@@ -44,9 +44,11 @@ const writeHash = (zoom, lat, lon, basemap, layers) => {
 
 /**
  * Bind the map to the URL hash. Restores view if hash is set; otherwise leaves
- * the map at its current center/zoom. Returns a dispose function.
+ * the map at its current center/zoom. Returns a handle exposing whether a view
+ * was restored, a layer-visibility applier, and a dispose function.
  * @param {L.Map} map
  * @param {{ basemaps: Record<string, L.Layer>, currentBasemapName?: string, getVisibleLayers?: () => string[], setVisibleLayers?: (layers: string[]) => void }} ctx
+ * @returns {{ restoredView: boolean, applyLayerVisibility: () => void, dispose: () => void }}
  */
 export const bindHashState = (map, ctx) => {
   let currentBasemap = ctx.currentBasemapName;
@@ -63,6 +65,10 @@ export const bindHashState = (map, ctx) => {
       currentBasemap = restored.basemap;
     }
   }
+  // Signals to the caller that a shareable view was restored, so the plugin
+  // can skip its automatic fit-to-data (which would otherwise fight the
+  // restored view via a deferred moveend and land on the wrong extent).
+  const restoredView = restored !== null;
 
   const update = () => {
     const c = map.getCenter();
@@ -82,6 +88,7 @@ export const bindHashState = (map, ctx) => {
 
   return {
     applyLayerVisibility,
+    restoredView,
     dispose() {
       map.off('moveend zoomend', update);
       map.off('overlayadd overlayremove', update);
