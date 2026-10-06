@@ -47,6 +47,10 @@ const yasgui = new Yasgui(document.getElementById('yasgui'), {
 | `timeBindingNames` | `string[] \| null` | common names | Override temporal binding names (`time`, `date`, `datetime`, `timestamp`, `start`, `startDate`). |
 | `timeMode` | `'cumulative' \| 'instant'` | `'cumulative'` | Show all features up to the selected time, or only features at the exact selected time. |
 | `permalink` | `boolean` | `false` | Persist center, zoom, basemap and visible geometry columns in the URL hash. |
+| `highlightOnHover` | `boolean` | `true` | Outline the hovered feature and bring it to the front, so overlapping features can be told apart. |
+| `highlightColor` | `string` (CSS color) | `#ff1493` | Outline color of the hovered feature. |
+| `labels` | `boolean` | `false` | Show feature labels permanently on the map at startup. |
+| `labelControl` | `boolean` | `true` | Show the 🏷️ control that toggles permanent labels. |
 
 ## Background maps
 
@@ -97,6 +101,13 @@ any IRI in a feature popup, and on IRIs inside the describe dialog itself.
 The triples are fetched with a background `SELECT` query through
 `yasr.executeQuery` (limited to 1000 rows), so the map keeps its results.
 IRIs are abbreviated with the prefixes declared in the main query.
+## Labels
+
+A feature's label is taken from `?wktLabel`, `?label`, `?name` or `?title`
+(in that order), else from the first literal binding whose name ends in
+`Label`, `Name` or `Title` (e.g. `?stationLabel`). The label shows as a tooltip
+when hovering the feature. The 🏷️ control (or the `labels` option) shows the
+labels permanently on the map.
 
 ## Convention-based per-feature controls
 
@@ -106,7 +117,7 @@ Bindings the plugin recognizes when present in result rows:
 |---|---|
 | `?wktColor` | Override fill/stroke color for that feature. |
 | `?wktLabel` | Plain-text popup content (replaces the default key/value table). |
-| `?wktTooltip` | Hover tooltip text. |
+| `?wktTooltip` | Hover tooltip text (takes precedence over the label). |
 
 ## Supported geometry literal datatypes
 
