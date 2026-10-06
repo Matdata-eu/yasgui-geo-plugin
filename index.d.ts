@@ -74,6 +74,14 @@ export interface GeoPluginOptions {
   timeMode?: TimeModeOption;
   /** Use dark basemap when OS prefers dark color scheme. Default `'auto'`. */
   darkMode?: DarkModeOption;
+  /** Outline a feature in `highlightColor` while the mouse is over it. Default `true`. */
+  highlightOnHover?: boolean;
+  /** Outline color of a hovered feature. Default `'#ff1493'`. */
+  highlightColor?: string;
+  /** Show feature labels permanently on the map at startup. Default `false`. */
+  labels?: boolean;
+  /** Show the map control that toggles permanent labels. Default `true`. */
+  labelControl?: boolean;
 }
 
 export interface YasrLike {
