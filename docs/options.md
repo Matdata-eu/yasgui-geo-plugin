@@ -10,7 +10,7 @@ const yasgui = new Yasgui(document.getElementById('yasgui'), {
     plugins: {
       geo: {
         defaultColor: '#ff5722',
-        defaultBasemap: 'CartoDB Voyager',
+        defaultBasemap: 'ESRI Light Gray',
         initialView: { center: [48.8566, 2.3522], zoom: 11 },
         maxZoom: 18,
         minHeight: 600,
@@ -36,6 +36,7 @@ const yasgui = new Yasgui(document.getElementById('yasgui'), {
 | `minHeight` | `number` (px) | `500` | Minimum height of the map container. |
 | `latLonAutoDetect` | `boolean` | `true` | Auto-detect numeric lat/lon column pairs and synthesize a WKT POINT column. |
 | `basemaps` | `{ [name]: L.TileLayer }` | built-in | Replace the bundled basemap dictionary. |
+| `tileOverlays` | `{ [name]: L.TileLayer }` | built-in | Tile overlays offered in the layer control. Pass `{}` to hide the built-in ones. |
 | `styleControl` | `boolean` | `true` | Show the compact style control for default color, opacity, fill, stroke width and marker radius. |
 | `styleStorageKey` | `string \| null` | query hash | Override the localStorage key used to persist style-control values. |
 | `simplifyTolerance` | `number` | `0` | Initial turf-simplify tolerance in degrees. |
@@ -46,6 +47,27 @@ const yasgui = new Yasgui(document.getElementById('yasgui'), {
 | `timeBindingNames` | `string[] \| null` | common names | Override temporal binding names (`time`, `date`, `datetime`, `timestamp`, `start`, `startDate`). |
 | `timeMode` | `'cumulative' \| 'instant'` | `'cumulative'` | Show all features up to the selected time, or only features at the exact selected time. |
 | `permalink` | `boolean` | `false` | Persist center, zoom, basemap and visible geometry columns in the URL hash. |
+
+## Background maps
+
+The layer control (top right) offers these background maps, none of which
+needs an API key:
+
+| Name | Source |
+|---|---|
+| `openStreetMap` (default) | OpenStreetMap standard |
+| `OSM Humanitarian` | OpenStreetMap, Humanitarian style |
+| `CyclOSM` | OpenStreetMap, CyclOSM style |
+| `openTopoMap` | OpenTopoMap |
+| `ESRI World Imagery (Satellite)` | Esri satellite imagery |
+| `ESRI World Topo` | Esri topographic map |
+| `ESRI Light Gray` | Esri light gray canvas, a quiet background for data |
+| `ESRI Dark Gray` | Esri dark gray canvas |
+| `None` | No background map |
+
+It also offers two tile overlays that can be combined with any background:
+`OpenRailwayMap` (railway infrastructure) and `ESRI Place Names & Boundaries`
+(useful on top of satellite imagery).
 
 ## Styling
 

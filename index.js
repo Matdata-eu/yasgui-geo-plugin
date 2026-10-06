@@ -8,6 +8,7 @@ import 'leaflet.heat';
 import proj4 from 'proj4';
 import { wktToGeoJSON } from 'betterknown';
 import { renderPopup } from './src/popup.js';
+import { builtInBasemapFactories, builtInOverlayFactories, buildBasemaps } from './src/basemaps.js';
 import { DescribeModal, findEntityIri, isDescribeClick, describeDirection } from './src/describe.js';
 import { injectLatLonPointColumn } from './src/latlon.js';
 import { parseGML } from './src/gml.js';
@@ -117,45 +118,6 @@ const ensureSridRegistered = async (srid) => {
   return fetchPromise;
 };
 
-
-// Each basemap is a factory so every map instance gets its own L.tileLayer.
-// A single tile layer cannot be shared across maps — sharing causes tiles to
-// fail loading when the plugin is re-instantiated on the same page.
-const builtInBasemapFactories = {
-  openStreetMap: () => L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenStreetMap contributors' },
-  ),
-  openTopoMap: () => L.tileLayer(
-    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenTopoMap contributors' },
-  ),
-  'ESRI World Imagery (Satellite)': () => L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {
-      attribution:
-        'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-    },
-  ),
-  'CartoDB Voyager': () => L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    { attribution: '&copy; CartoDB' },
-  ),
-  'CartoDB Dark Matter': () => L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    { attribution: '&copy; CartoDB' },
-  ),
-};
-
-// Build a fresh set of basemap layers, accepting either a factory map (preferred)
-// or a legacy map of pre-built L.tileLayer instances (treated as-is for back-compat).
-function buildBasemaps(source) {
-  const out = {};
-  for (const [name, value] of Object.entries(source)) {
-    out[name] = typeof value === 'function' ? value() : value;
-  }
-  return out;
-}
 
 /**
  * Recursively reprojects all coordinates in a GeoJSON geometry
@@ -448,6 +410,7 @@ const DEFAULT_OPTIONS = {
   maxZoom: 14,
   minHeight: 500,
   basemaps: null, // null = use built-in `basemaps`
+  tileOverlays: null, // null = use built-in tile overlays, {} = none
   clustering: true,
   clusterMinPoints: 50,
   maxClusterRadius: 50,
@@ -562,7 +525,8 @@ class GeoPlugin {
       const initialBasemapName = opts.defaultBasemap;
       const initialBasemap = basemaps[initialBasemapName] || Object.values(basemaps)[0];
       initialBasemap.addTo(map);
-      this.layerControl = L.control.layers(basemaps, {}).addTo(map);
+      const tileOverlays = buildBasemaps(opts.tileOverlays || builtInOverlayFactories);
+      this.layerControl = L.control.layers(basemaps, tileOverlays).addTo(map);
       this.map = map;
       this.columnLayers = new Map();
       this._featureCollections = new Map();
