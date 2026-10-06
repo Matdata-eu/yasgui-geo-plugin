@@ -87,6 +87,22 @@ describe('attachHoverHighlight', () => {
     el.remove();
   });
 
+  it('closes the hover label along with the highlight', () => {
+    const el = document.createElement('div');
+    document.body.append(el);
+    const map = L.map(el).setView([0, 0], 5);
+    const layer = L.polygon([[0, 0], [1, 0], [1, 1]]).addTo(map);
+    bindFeatureLabel(layer, { label: lit('Area') }, false);
+    attachHoverHighlight(layer, '#f0f');
+    layer.fire('mouseover');
+    layer.openTooltip([0.5, 0.5]);
+    expect(layer.isTooltipOpen()).toBe(true);
+    map.getContainer().dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+    expect(layer.isTooltipOpen()).toBe(false);
+    map.remove();
+    el.remove();
+  });
+
   it('restores the style when the layer is removed while hovered', () => {
     const map = L.map(document.createElement('div')).setView([0, 0], 5);
     const layer = L.circleMarker([0, 0], { color: '#3388ff', weight: 2 }).addTo(map);

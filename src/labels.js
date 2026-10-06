@@ -77,6 +77,9 @@ export const attachHoverHighlight = (layer, color = DEFAULT_HIGHLIGHT_COLOR) => 
     if (!saved) return;
     for (const [path, style] of saved) path.setStyle(style);
     saved = null;
+    // The hover label closes on the same mouseout; close it here too.
+    const tooltip = layer.getTooltip?.();
+    if (tooltip && !tooltip.options.permanent) layer.closeTooltip();
     if (container) {
       L.DomEvent.off(container, 'mousemove', onMove);
       L.DomEvent.off(container, 'mouseleave', restore);
