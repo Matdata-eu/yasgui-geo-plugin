@@ -27,6 +27,7 @@ This package extends the YASGUI (Yet Another SPARQL GUI) interface with geograph
 - Live **coordinate readout** and **distance-measure** tool
 - **Dark-mode-aware** default basemap
 - **Background maps** without API keys (OpenStreetMap, OSM Humanitarian, CyclOSM, OpenTopoMap, Esri imagery/topo/light/dark gray), a **None** option to hide the background, and OpenRailwayMap / place-name overlays
+- **Hover highlight and labels**: the hovered feature is outlined and brought to the front, its label (`?label`, `?name`, `?xLabel`, …) shows on hover, and a 🏷️ control toggles permanent labels on the map
 - **Safe popups**: SPARQL bindings rendered as DOM (no XSS), with IRI linkification and inline image previews
 - Accessibility: keyboard-focusable popups, real buttons, ARIA-labeled plugin icon
 - TypeScript declarations included
