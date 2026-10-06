@@ -50,24 +50,42 @@ export const highlightStyle = (base = {}, color = DEFAULT_HIGHLIGHT_COLOR) => ({
 
 const STYLE_KEYS = ['color', 'weight', 'opacity', 'fillOpacity'];
 
+// The vector paths of a layer: the layer itself, or the leaves of a group.
+// A GeometryCollection becomes an L.FeatureGroup, whose own options carry
+// no style, so styles are saved and restored per path.
+const pathsOf = (layer) => {
+  if (typeof layer.eachLayer === 'function') {
+    const paths = [];
+    layer.eachLayer(child => paths.push(...pathsOf(child)));
+    return paths;
+  }
+  return typeof layer.setStyle === 'function' ? [layer] : [];
+};
+
 /**
- * Highlight a vector layer while the mouse is over it.
- * @param {L.Path} layer
+ * Highlight a vector layer (or a group of them) while the mouse is over it.
+ * @param {L.Path|L.FeatureGroup} layer
  * @param {string} [color]
  */
 export const attachHoverHighlight = (layer, color = DEFAULT_HIGHLIGHT_COLOR) => {
   if (typeof layer.setStyle !== 'function') return;
-  let saved = null;
+  let saved = null; // [path, style] pairs while highlighted
+  const restore = () => {
+    if (!saved) return;
+    for (const [path, style] of saved) path.setStyle(style);
+    saved = null;
+  };
   layer.on('mouseover', () => {
-    if (!saved) saved = Object.fromEntries(STYLE_KEYS.map(k => [k, layer.options[k]]));
-    layer.setStyle(highlightStyle(saved, color));
+    if (!saved) {
+      saved = pathsOf(layer).map(path => [path, Object.fromEntries(STYLE_KEYS.map(k => [k, path.options[k]]))]);
+    }
+    for (const [path, style] of saved) path.setStyle(highlightStyle(style, color));
     if (typeof layer.bringToFront === 'function') layer.bringToFront();
   });
-  layer.on('mouseout', () => {
-    if (!saved) return;
-    layer.setStyle(saved);
-    saved = null;
-  });
+  layer.on('mouseout', restore);
+  // A feature removed while hovered (e.g. absorbed by a marker cluster on
+  // zoom) never gets its mouseout; don't let it come back highlighted.
+  layer.on('remove', restore);
 };
 
 /**
