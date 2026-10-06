@@ -7,7 +7,7 @@ import 'leaflet.markercluster';
 import 'leaflet.heat';
 import proj4 from 'proj4';
 import { wktToGeoJSON } from 'betterknown';
-import { renderPopup } from './src/popup.js';
+import { renderPopup, POPUP_OPTIONS } from './src/popup.js';
 import { builtInBasemapFactories, builtInOverlayFactories, buildBasemaps } from './src/basemaps.js';
 import { DescribeModal, findEntityIri, isDescribeClick, describeDirection } from './src/describe.js';
 import { addLabelControl, attachHoverHighlight, bindFeatureLabel, DEFAULT_HIGHLIGHT_COLOR } from './src/labels.js';
@@ -722,12 +722,14 @@ class GeoPlugin {
           if (p.wktLabel?.value) {
             const span = document.createElement('span');
             span.textContent = p.wktLabel.value;
-            layer.bindPopup(span);
+            span.style.overflowWrap = 'anywhere';
+            layer.bindPopup(span, POPUP_OPTIONS);
           } else {
             layer.bindPopup(renderPopup(p, {
               skip: ['wktLabel', 'wktTooltip', 'wktColor'],
+              geometryDatatypes: Object.keys(conversions),
               onIriCtrlClick: (iri, direction) => this.describe(iri, direction),
-            }));
+            }), POPUP_OPTIONS);
           }
           // Ctrl/Cmd+click describes the feature's entity instead of opening
           // its popup; Shift asks for the triples where it is the object.
