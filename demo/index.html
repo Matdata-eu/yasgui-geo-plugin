@@ -98,6 +98,7 @@
         <option value="geohash">GeoHash — Random Points</option>
         <option value="wktTypes">All WKT Types — Points, Lines, Polygons, Z/M/ZM, Empty, CRS</option>
         <option value="combination">Mixed EPSG in same column</option>
+        <option value="operationalPoints">Operational points with PLC — GeometryCollections, EPSG:25832 (778 rows)</option>
       </select>
     </label>
 
@@ -63688,7 +63689,13 @@
     };
     const plugin = new GeoPlugin(mockYasr);
 
+    // Larger datasets live in demo/data and are fetched on first use.
+    const lazyData = {
+      operationalPoints: () => import('./data/operational-points-plc.json').then(m => m.default),
+    };
+
     async function loadDataset(key) {
+      if (!mockData[key] && lazyData[key]) mockData[key] = await lazyData[key]();
       // A shared permalink view belongs to whichever dataset was active when it
       // was written; drop it so the next dataset fits to its own geometry.
       history.replaceState(null, '', location.pathname + location.search);

@@ -50,24 +50,60 @@ export const highlightStyle = (base = {}, color = DEFAULT_HIGHLIGHT_COLOR) => ({
 
 const STYLE_KEYS = ['color', 'weight', 'opacity', 'fillOpacity'];
 
+// The vector paths of a layer: the layer itself, or the leaves of a group.
+// A GeometryCollection becomes an L.FeatureGroup, whose own options carry
+// no style, so styles are saved and restored per path.
+const pathsOf = (layer) => {
+  if (typeof layer.eachLayer === 'function') {
+    const paths = [];
+    layer.eachLayer(child => paths.push(...pathsOf(child)));
+    return paths;
+  }
+  return typeof layer.setStyle === 'function' ? [layer] : [];
+};
+
 /**
- * Highlight a vector layer while the mouse is over it.
- * @param {L.Path} layer
+ * Highlight a vector layer (or a group of them) while the mouse is over it.
+ * @param {L.Path|L.FeatureGroup} layer
  * @param {string} [color]
  */
 export const attachHoverHighlight = (layer, color = DEFAULT_HIGHLIGHT_COLOR) => {
   if (typeof layer.setStyle !== 'function') return;
-  let saved = null;
-  layer.on('mouseover', () => {
-    if (!saved) saved = Object.fromEntries(STYLE_KEYS.map(k => [k, layer.options[k]]));
-    layer.setStyle(highlightStyle(saved, color));
-    if (typeof layer.bringToFront === 'function') layer.bringToFront();
-  });
-  layer.on('mouseout', () => {
+  let saved = null; // [path, style] pairs while highlighted
+  let container = null; // map container watched while highlighted
+  const isOnLayer = (target) => saved.some(([path]) => path.getElement?.() === target);
+  const onMove = (e) => { if (!isOnLayer(e.target)) restore(); };
+  const restore = () => {
     if (!saved) return;
-    layer.setStyle(saved);
+    for (const [path, style] of saved) path.setStyle(style);
     saved = null;
+    // The hover label closes on the same mouseout; close it here too.
+    const tooltip = layer.getTooltip?.();
+    if (tooltip && !tooltip.options.permanent) layer.closeTooltip();
+    if (container) {
+      L.DomEvent.off(container, 'mousemove', onMove);
+      L.DomEvent.off(container, 'mouseleave', restore);
+      container = null;
+    }
+  };
+  layer.on('mouseover', () => {
+    if (saved) return;
+    saved = pathsOf(layer).map(path => [path, Object.fromEntries(STYLE_KEYS.map(k => [k, path.options[k]]))]);
+    for (const [path, style] of saved) path.setStyle(highlightStyle(style, color));
+    if (typeof layer.bringToFront === 'function') layer.bringToFront();
+    // bringToFront re-inserts the hovered SVG element. Browsers that track
+    // node removal for boundary events (e.g. current Edge) then send it no
+    // mouseout, so also watch the map's own mouse moves to end the highlight.
+    container = layer._map?.getContainer() ?? null;
+    if (container) {
+      L.DomEvent.on(container, 'mousemove', onMove);
+      L.DomEvent.on(container, 'mouseleave', restore);
+    }
   });
+  layer.on('mouseout', restore);
+  // A feature removed while hovered (e.g. absorbed by a marker cluster on
+  // zoom) never gets its mouseout; don't let it come back highlighted.
+  layer.on('remove', restore);
 };
 
 /**

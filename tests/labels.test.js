@@ -44,6 +44,73 @@ describe('attachHoverHighlight', () => {
     layer.fire('mouseout');
     expect(layer.options).toMatchObject({ color: '#3388ff', weight: 2, opacity: 0.8, fillOpacity: 0.5 });
   });
+
+  it('restores each part of a GeometryCollection to its own style', () => {
+    let group;
+    L.geoJson({
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'GeometryCollection',
+        geometries: [
+          { type: 'Point', coordinates: [10, 59] },
+          { type: 'LineString', coordinates: [[10, 59], [10.1, 59.1]] },
+        ],
+      },
+    }, {
+      pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 4 }),
+      style: () => ({ color: '#00f', weight: 3, opacity: 0.8, fillOpacity: 0.5 }),
+      onEachFeature: (f, layer) => { group = layer; attachHoverHighlight(layer, '#f0f'); },
+    });
+    const parts = group.getLayers();
+    expect(parts).toHaveLength(2);
+    parts[1].fire('mouseover', {}, true);
+    for (const p of parts) expect(p.options.color).toBe('#f0f');
+    parts[1].fire('mouseout', {}, true);
+    for (const p of parts) {
+      expect(p.options).toMatchObject({ color: '#00f', weight: 3, opacity: 0.8, fillOpacity: 0.5 });
+    }
+  });
+
+  it('restores the style when the mouse moves off the layer without a mouseout', () => {
+    const el = document.createElement('div');
+    document.body.append(el);
+    const map = L.map(el).setView([0, 0], 5);
+    const layer = L.polygon([[0, 0], [1, 0], [1, 1]], { color: '#3388ff', weight: 2 }).addTo(map);
+    attachHoverHighlight(layer, '#f0f');
+    layer.fire('mouseover');
+    layer.getElement().dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+    expect(layer.options.color).toBe('#f0f');
+    map.getContainer().dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+    expect(layer.options).toMatchObject({ color: '#3388ff', weight: 2 });
+    map.remove();
+    el.remove();
+  });
+
+  it('closes the hover label along with the highlight', () => {
+    const el = document.createElement('div');
+    document.body.append(el);
+    const map = L.map(el).setView([0, 0], 5);
+    const layer = L.polygon([[0, 0], [1, 0], [1, 1]]).addTo(map);
+    bindFeatureLabel(layer, { label: lit('Area') }, false);
+    attachHoverHighlight(layer, '#f0f');
+    layer.fire('mouseover');
+    layer.openTooltip([0.5, 0.5]);
+    expect(layer.isTooltipOpen()).toBe(true);
+    map.getContainer().dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+    expect(layer.isTooltipOpen()).toBe(false);
+    map.remove();
+    el.remove();
+  });
+
+  it('restores the style when the layer is removed while hovered', () => {
+    const map = L.map(document.createElement('div')).setView([0, 0], 5);
+    const layer = L.circleMarker([0, 0], { color: '#3388ff', weight: 2 }).addTo(map);
+    attachHoverHighlight(layer, '#f0f');
+    layer.fire('mouseover');
+    map.removeLayer(layer);
+    expect(layer.options).toMatchObject({ color: '#3388ff', weight: 2 });
+  });
 });
 
 describe('bindFeatureLabel', () => {
