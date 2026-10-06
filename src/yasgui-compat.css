@@ -20,3 +20,17 @@
   background-image: url('../node_modules/leaflet/dist/images/layers-2x.png');
   background-size: 26px 26px;
 }
+
+/* Feature labels: permanent labels drawn on the map, and hover labels */
+.leaflet-tooltip.yasgui-geo-label {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: #111;
+  font-weight: 600;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff;
+}
+.leaflet-tooltip.yasgui-geo-label::before {
+  display: none;
+}

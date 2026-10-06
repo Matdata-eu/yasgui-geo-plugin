@@ -8,6 +8,7 @@ import 'leaflet.heat';
 import proj4 from 'proj4';
 import { wktToGeoJSON } from 'betterknown';
 import { renderPopup } from './src/popup.js';
+import { addLabelControl, attachHoverHighlight, bindFeatureLabel, DEFAULT_HIGHLIGHT_COLOR } from './src/labels.js';
 import { injectLatLonPointColumn } from './src/latlon.js';
 import { parseGML } from './src/gml.js';
 import { parseGeoHash } from './src/geohash.js';
@@ -470,6 +471,10 @@ const DEFAULT_OPTIONS = {
   timeBindingNames: null,
   timeMode: 'cumulative', // 'cumulative' | 'instant'
   darkMode: 'auto', // 'auto' | true | false
+  highlightOnHover: true,
+  highlightColor: DEFAULT_HIGHLIGHT_COLOR,
+  labels: false,
+  labelControl: true,
 };
 
 /**
@@ -499,6 +504,7 @@ class GeoPlugin {
     this.timeSelection = null;
     // 'heatmap' | 'cluster' | 'all'
     this._displayMode = this.options.heatmap ? 'heatmap' : 'cluster';
+    this._showLabels = !!this.options.labels;
     this.updateColumns();
   }
 
@@ -647,6 +653,12 @@ class GeoPlugin {
         });
         new HeatToggle().addTo(map);
       }
+      if (opts.labelControl) {
+        addLabelControl(map, this._showLabels, (on) => {
+          this._showLabels = on;
+          this.updateMap();
+        });
+      }
       if (opts.simplifyControl) {
         addSimplifyControl(map, opts.simplifyTolerance, {
           max: opts.simplifyMaxTolerance,
@@ -749,9 +761,8 @@ class GeoPlugin {
           } else {
             layer.bindPopup(renderPopup(p, { skip: ['wktLabel', 'wktTooltip', 'wktColor'] }));
           }
-          if (p.wktTooltip?.value) {
-            layer.bindTooltip(p.wktTooltip.value);
-          }
+          bindFeatureLabel(layer, p, this._showLabels);
+          if (opts.highlightOnHover) attachHoverHighlight(layer, opts.highlightColor);
         },
         style: (feature) => {
           const style = resolveFeatureStyle(feature, this.styleState, DEFAULT_COLOR);
