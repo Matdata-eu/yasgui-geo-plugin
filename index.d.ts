@@ -20,7 +20,7 @@ export interface GeoPluginOptions {
   latLonAutoDetect?: boolean;
   /** Default stroke / fill color for features lacking `?wktColor`. Default `'#3388ff'`. */
   defaultColor?: string;
-  /** Name of the default basemap. Default `'openStreetMap'`. */
+  /** Name of the default basemap; `'None'` starts without a background map. Default `'openStreetMap'`. */
   defaultBasemap?: string;
   /** Initial map center and zoom. */
   initialView?: InitialView;
@@ -30,6 +30,8 @@ export interface GeoPluginOptions {
   minHeight?: number;
   /** Custom basemaps dictionary. When omitted, a built-in set is used. */
   basemaps?: Record<string, L.Layer> | null;
+  /** Custom tile overlays offered in the layer control. When omitted, built-in overlays (OpenRailwayMap, Esri place names) are used; `{}` disables them. */
+  tileOverlays?: Record<string, L.Layer | (() => L.Layer)> | null;
   /** Cluster point layers above `clusterMinPoints`. Default `true`. */
   clustering?: boolean;
   /** Minimum number of points before clustering kicks in. Default `50`. */
