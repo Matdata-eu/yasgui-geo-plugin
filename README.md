@@ -26,6 +26,7 @@ This package extends the YASGUI (Yet Another SPARQL GUI) interface with geograph
 - **Time slider** for result sets with `?time` / `?date` bindings, including play/pause animation
 - Live **coordinate readout** and **distance-measure** tool
 - **Dark-mode-aware** default basemap
+- **Describe entities**: Ctrl+click (Cmd+click on macOS) a feature or an IRI in its popup to list the triples where it is the subject; add Shift for the triples where it is the object. Runs as a background query, like the table plugin
 - **Safe popups**: SPARQL bindings rendered as DOM (no XSS), with IRI linkification and inline image previews
 - Accessibility: keyboard-focusable popups, real buttons, ARIA-labeled plugin icon
 - TypeScript declarations included

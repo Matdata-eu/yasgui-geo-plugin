@@ -65,6 +65,17 @@ When result rows contain a `?time`, `?date`, `?datetime`, `?timestamp`,
 default cumulative mode shows all dated features up to the selected value;
 undated features remain visible.
 
+## Describing entities
+
+Ctrl+click (Cmd+click on macOS) a feature to list the triples where the
+feature's entity (the first IRI binding of its row) is the subject.
+Ctrl+Shift+click lists the triples where it is the object. The same works on
+any IRI in a feature popup, and on IRIs inside the describe dialog itself.
+
+The triples are fetched with a background `SELECT` query through
+`yasr.executeQuery` (limited to 1000 rows), so the map keeps its results.
+IRIs are abbreviated with the prefixes declared in the main query.
+
 ## Convention-based per-feature controls
 
 Bindings the plugin recognizes when present in result rows:

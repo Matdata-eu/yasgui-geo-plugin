@@ -8,7 +8,7 @@ const MAX_VALUE_CHARS = 240;
 
 const isIRI = (binding) => binding && (binding.type === 'uri' || binding.type === 'iri');
 
-const createValueNode = (binding, doc) => {
+const createValueNode = (binding, doc, onIriCtrlClick) => {
   const value = binding?.value ?? '';
   if (isIRI(binding) || URL_RE.test(value)) {
     if (IMAGE_EXT.test(value)) {
@@ -26,6 +26,15 @@ const createValueNode = (binding, doc) => {
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.textContent = value;
+    if (onIriCtrlClick) {
+      // Ctrl/Cmd+click describes the IRI instead of opening it (same as the table plugin).
+      a.addEventListener('click', (ev) => {
+        if (!(ev.ctrlKey || ev.metaKey)) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        onIriCtrlClick(value, ev.shiftKey ? 'object' : 'subject');
+      });
+    }
     return a;
   }
   const span = doc.createElement('span');
@@ -59,6 +68,7 @@ const createValueNode = (binding, doc) => {
  * @param {Object} properties - SPARQL bindings { var: { value, type, datatype } }
  * @param {Object} [opts]
  * @param {string[]} [opts.skip] - Variable names to omit (e.g. 'wktLabel', 'wktTooltip')
+ * @param {(iri: string, direction: 'subject'|'object') => void} [opts.onIriCtrlClick] - Called when an IRI is Ctrl/Cmd(+Shift)+clicked
  * @param {Document} [opts.doc] - Document to use (defaults to global document)
  * @returns {HTMLElement}
  */
@@ -84,7 +94,7 @@ export const renderPopup = (properties, opts = {}) => {
     th.style.paddingRight = '6px';
     th.style.whiteSpace = 'nowrap';
     const td = doc.createElement('td');
-    td.appendChild(createValueNode(binding, doc));
+    td.appendChild(createValueNode(binding, doc, opts.onIriCtrlClick));
     tr.appendChild(th);
     tr.appendChild(td);
     table.appendChild(tr);

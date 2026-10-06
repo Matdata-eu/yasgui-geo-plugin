@@ -8,6 +8,7 @@ import 'leaflet.heat';
 import proj4 from 'proj4';
 import { wktToGeoJSON } from 'betterknown';
 import { renderPopup } from './src/popup.js';
+import { DescribeModal, findEntityIri, isDescribeClick, describeDirection } from './src/describe.js';
 import { injectLatLonPointColumn } from './src/latlon.js';
 import { parseGML } from './src/gml.js';
 import { parseGeoHash } from './src/geohash.js';
@@ -747,8 +748,25 @@ class GeoPlugin {
             span.textContent = p.wktLabel.value;
             layer.bindPopup(span);
           } else {
-            layer.bindPopup(renderPopup(p, { skip: ['wktLabel', 'wktTooltip', 'wktColor'] }));
+            layer.bindPopup(renderPopup(p, {
+              skip: ['wktLabel', 'wktTooltip', 'wktColor'],
+              onIriCtrlClick: (iri, direction) => this.describe(iri, direction),
+            }));
           }
+          // Ctrl/Cmd+click describes the feature's entity instead of opening
+          // its popup; Shift asks for the triples where it is the object.
+          layer.off('click', layer._openPopup, layer);
+          layer.on('click', (e) => {
+            const entity = findEntityIri(p);
+            if (isDescribeClick(e.originalEvent) && entity) {
+              L.DomEvent.stop(e);
+              this.describe(entity, describeDirection(e.originalEvent));
+            } else if (typeof layer._openPopup === 'function') {
+              layer._openPopup(e);
+            } else {
+              layer.openPopup(e.latlng);
+            }
+          });
           if (p.wktTooltip?.value) {
             layer.bindTooltip(p.wktTooltip.value);
           }
@@ -844,6 +862,18 @@ class GeoPlugin {
         this.map.fitBounds(fitB, { padding: [20, 20], maxZoom: opts.maxZoom, animate: false });
       }
     }, 100);
+  }
+
+  /**
+   * Show the triples where `iri` is the subject or the object in a modal,
+   * fetched with a background query so the map keeps its results.
+   * @param {string} iri
+   * @param {'subject'|'object'} direction
+   * @returns {Promise<void>}
+   */
+  describe(iri, direction) {
+    if (!this.describeModal) this.describeModal = new DescribeModal(this.yasr);
+    return this.describeModal.describe(iri, direction);
   }
 
   /**
