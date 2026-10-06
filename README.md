@@ -26,7 +26,7 @@ This package extends the YASGUI (Yet Another SPARQL GUI) interface with geograph
 - **Time slider** for result sets with `?time` / `?date` bindings, including play/pause animation
 - Live **coordinate readout** and **distance-measure** tool
 - **Dark-mode-aware** default basemap
-- **Safe popups**: SPARQL bindings rendered as DOM (no XSS), with IRI linkification and inline image previews
+- **Safe popups**: SPARQL bindings rendered as DOM (no XSS), with IRI linkification and inline image previews; long IRIs wrap, geometry literals are collapsed behind a "show more" toggle, and tall popups scroll
 - Accessibility: keyboard-focusable popups, real buttons, ARIA-labeled plugin icon
 - TypeScript declarations included
 - Configurable basemaps, default view, clustering thresholds, simplification tolerance, etc. — see [docs/options.md](docs/options.md)
