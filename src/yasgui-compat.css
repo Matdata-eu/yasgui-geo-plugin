@@ -21,6 +21,102 @@
   background-size: 26px 26px;
 }
 
+/* Describe modal (Ctrl+click / Ctrl+Shift+click on a feature or IRI) */
+.yasgui-geo-describe-backdrop {
+  --geo-describe-bg: #fff;
+  --geo-describe-fg: #222;
+  --geo-describe-muted: #666;
+  --geo-describe-border: #ddd;
+  --geo-describe-link: #06c;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+[data-theme='dark'] .yasgui-geo-describe-backdrop {
+  --geo-describe-bg: #1e1e1e;
+  --geo-describe-fg: #e6e6e6;
+  --geo-describe-muted: #a0a0a0;
+  --geo-describe-border: #3a3a3a;
+  --geo-describe-link: #6cb6ff;
+}
+.yasgui-geo-describe {
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 90vw);
+  max-height: 80vh;
+  background: var(--geo-describe-bg);
+  color: var(--geo-describe-fg);
+  border: 1px solid var(--geo-describe-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+.yasgui-geo-describe a {
+  color: var(--geo-describe-link);
+  overflow-wrap: anywhere;
+}
+.yasgui-geo-describe-header,
+.yasgui-geo-describe-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+}
+.yasgui-geo-describe-header {
+  border-bottom: 1px solid var(--geo-describe-border);
+  font-size: 15px;
+  font-weight: 600;
+}
+.yasgui-geo-describe-footer {
+  border-top: 1px solid var(--geo-describe-border);
+  color: var(--geo-describe-muted);
+  font-size: 12px;
+}
+.yasgui-geo-describe-direction,
+.yasgui-geo-describe-meta,
+.yasgui-geo-describe-message {
+  color: var(--geo-describe-muted);
+  font-weight: normal;
+}
+.yasgui-geo-describe-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+.yasgui-geo-describe-body {
+  overflow: auto;
+  padding: 0 14px;
+}
+.yasgui-geo-describe-error {
+  color: #c62828;
+}
+.yasgui-geo-describe-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.yasgui-geo-describe-table th {
+  position: sticky;
+  top: 0;
+  background: var(--geo-describe-bg);
+  text-align: left;
+}
+.yasgui-geo-describe-table th,
+.yasgui-geo-describe-table td {
+  padding: 4px 8px 4px 0;
+  border-bottom: 1px solid var(--geo-describe-border);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
 /* Feature labels: permanent labels drawn on the map, and hover labels */
 .leaflet-tooltip.yasgui-geo-label {
   background: transparent;

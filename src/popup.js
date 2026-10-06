@@ -60,7 +60,7 @@ const renderCollapsible = (span, value, limit, doc) => {
   showShort();
 };
 
-const createValueNode = (binding, doc, { geometryDatatypes }) => {
+const createValueNode = (binding, doc, { geometryDatatypes, onIriCtrlClick }) => {
   const value = binding?.value ?? '';
   if (isIRI(binding) || URL_RE.test(value)) {
     if (IMAGE_EXT.test(value)) {
@@ -79,6 +79,15 @@ const createValueNode = (binding, doc, { geometryDatatypes }) => {
     a.rel = 'noopener noreferrer';
     a.textContent = value;
     wrapAnywhere(a);
+    if (onIriCtrlClick) {
+      // Ctrl/Cmd+click describes the IRI instead of opening it (same as the table plugin).
+      a.addEventListener('click', (ev) => {
+        if (!(ev.ctrlKey || ev.metaKey)) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        onIriCtrlClick(value, ev.shiftKey ? 'object' : 'subject');
+      });
+    }
     return a;
   }
   const span = doc.createElement('span');
@@ -100,6 +109,7 @@ const createValueNode = (binding, doc, { geometryDatatypes }) => {
  * @param {Object} [opts]
  * @param {string[]} [opts.skip] - Variable names to omit (e.g. 'wktLabel', 'wktTooltip')
  * @param {string[]} [opts.geometryDatatypes] - Datatype IRIs of geometry literals, which are shortened more aggressively
+ * @param {(iri: string, direction: 'subject'|'object') => void} [opts.onIriCtrlClick] - Called when an IRI is Ctrl/Cmd(+Shift)+clicked
  * @param {Document} [opts.doc] - Document to use (defaults to global document)
  * @returns {HTMLElement} the scroll container holding the table
  */
@@ -128,7 +138,7 @@ export const renderPopup = (properties, opts = {}) => {
     th.style.whiteSpace = 'nowrap';
     const td = doc.createElement('td');
     wrapAnywhere(td);
-    td.appendChild(createValueNode(binding, doc, { geometryDatatypes }));
+    td.appendChild(createValueNode(binding, doc, { geometryDatatypes, onIriCtrlClick: opts.onIriCtrlClick }));
     tr.appendChild(th);
     tr.appendChild(td);
     table.appendChild(tr);

@@ -9,6 +9,7 @@ import proj4 from 'proj4';
 import { wktToGeoJSON } from 'betterknown';
 import { renderPopup, POPUP_OPTIONS } from './src/popup.js';
 import { builtInBasemapFactories, builtInOverlayFactories, buildBasemaps } from './src/basemaps.js';
+import { DescribeModal, findEntityIri, isDescribeClick, describeDirection } from './src/describe.js';
 import { addLabelControl, attachHoverHighlight, bindFeatureLabel, DEFAULT_HIGHLIGHT_COLOR } from './src/labels.js';
 import { injectLatLonPointColumn } from './src/latlon.js';
 import { parseGML } from './src/gml.js';
@@ -727,8 +728,23 @@ class GeoPlugin {
             layer.bindPopup(renderPopup(p, {
               skip: ['wktLabel', 'wktTooltip', 'wktColor'],
               geometryDatatypes: Object.keys(conversions),
+              onIriCtrlClick: (iri, direction) => this.describe(iri, direction),
             }), POPUP_OPTIONS);
           }
+          // Ctrl/Cmd+click describes the feature's entity instead of opening
+          // its popup; Shift asks for the triples where it is the object.
+          layer.off('click', layer._openPopup, layer);
+          layer.on('click', (e) => {
+            const entity = findEntityIri(p);
+            if (isDescribeClick(e.originalEvent) && entity) {
+              L.DomEvent.stop(e);
+              this.describe(entity, describeDirection(e.originalEvent));
+            } else if (typeof layer._openPopup === 'function') {
+              layer._openPopup(e);
+            } else {
+              layer.openPopup(e.latlng);
+            }
+          });
           bindFeatureLabel(layer, p, this._showLabels);
           if (opts.highlightOnHover) attachHoverHighlight(layer, opts.highlightColor);
         },
@@ -823,6 +839,18 @@ class GeoPlugin {
         this.map.fitBounds(fitB, { padding: [20, 20], maxZoom: opts.maxZoom, animate: false });
       }
     }, 100);
+  }
+
+  /**
+   * Show the triples where `iri` is the subject or the object in a modal,
+   * fetched with a background query so the map keeps its results.
+   * @param {string} iri
+   * @param {'subject'|'object'} direction
+   * @returns {Promise<void>}
+   */
+  describe(iri, direction) {
+    if (!this.describeModal) this.describeModal = new DescribeModal(this.yasr);
+    return this.describeModal.describe(iri, direction);
   }
 
   /**
