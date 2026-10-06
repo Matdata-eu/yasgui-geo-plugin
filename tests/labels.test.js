@@ -72,6 +72,21 @@ describe('attachHoverHighlight', () => {
     }
   });
 
+  it('restores the style when the mouse moves off the layer without a mouseout', () => {
+    const el = document.createElement('div');
+    document.body.append(el);
+    const map = L.map(el).setView([0, 0], 5);
+    const layer = L.polygon([[0, 0], [1, 0], [1, 1]], { color: '#3388ff', weight: 2 }).addTo(map);
+    attachHoverHighlight(layer, '#f0f');
+    layer.fire('mouseover');
+    layer.getElement().dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+    expect(layer.options.color).toBe('#f0f');
+    map.getContainer().dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+    expect(layer.options).toMatchObject({ color: '#3388ff', weight: 2 });
+    map.remove();
+    el.remove();
+  });
+
   it('restores the style when the layer is removed while hovered', () => {
     const map = L.map(document.createElement('div')).setView([0, 0], 5);
     const layer = L.circleMarker([0, 0], { color: '#3388ff', weight: 2 }).addTo(map);
