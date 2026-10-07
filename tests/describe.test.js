@@ -17,6 +17,8 @@ const jsonResponse = (bindings) => {
 };
 
 afterEach(() => {
+  // Escape closes every modal a test left open, removing its keydown listener.
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
   document.body.textContent = '';
 });
 
@@ -150,5 +152,92 @@ describe('popup IRIs', () => {
     a.dispatchEvent(ctrlShift);
     expect(onIriCtrlClick).toHaveBeenCalledWith('http://example.org/s', 'object');
     expect(ctrlShift.defaultPrevented).toBe(true);
+  });
+});
+
+describe('DescribeModal navigation history', () => {
+  const iriResponse = (next) => jsonResponse([
+    { p: { type: 'uri', value: 'http://example.org/next' }, o: { type: 'uri', value: next } },
+  ]);
+  const ctrlClick = async (iri, opts = {}) => {
+    const link = await vi.waitFor(() => {
+      const found = [...document.querySelectorAll('tbody a')].find(a => a.title === iri);
+      if (!found) throw new Error(`no link to ${iri} yet`);
+      return found;
+    });
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true, ...opts }));
+  };
+  const navButton = (cls) => document.querySelector(`.yasgui-geo-describe-${cls}`);
+  const title = () => document.querySelector('.yasgui-geo-describe-title').textContent;
+
+  // a -> b -> c, each node linking to the next.
+  const setup = async () => {
+    const executeQuery = vi.fn(async (query) => {
+      if (query.includes('<http://example.org/a>')) return iriResponse('http://example.org/b');
+      if (query.includes('<http://example.org/b>')) return iriResponse('http://example.org/c');
+      return iriResponse('http://example.org/d');
+    });
+    const modal = new DescribeModal({ executeQuery });
+    await modal.describe('http://example.org/a', 'subject');
+    await ctrlClick('http://example.org/b');
+    await vi.waitFor(() => expect(title()).toBe('http://example.org/b as subject'));
+    await ctrlClick('http://example.org/c', { shiftKey: true });
+    await vi.waitFor(() => expect(title()).toBe('http://example.org/c as object'));
+    return { modal, executeQuery };
+  };
+
+  it('disables back and forward on a fresh describe', async () => {
+    await new DescribeModal({ executeQuery: async () => iriResponse('http://example.org/b') })
+      .describe('http://example.org/a', 'subject');
+    expect(navButton('start').disabled).toBe(true);
+    expect(navButton('back').disabled).toBe(true);
+    expect(navButton('forward').disabled).toBe(true);
+  });
+
+  it('steps back and forward through Ctrl+clicked IRIs, keeping their direction', async () => {
+    await setup();
+    expect(navButton('back').disabled).toBe(false);
+    expect(navButton('forward').disabled).toBe(true);
+
+    navButton('back').click();
+    await vi.waitFor(() => expect(title()).toBe('http://example.org/b as subject'));
+    expect(navButton('forward').disabled).toBe(false);
+
+    navButton('forward').click();
+    await vi.waitFor(() => expect(title()).toBe('http://example.org/c as object'));
+    expect(navButton('forward').disabled).toBe(true);
+  });
+
+  it('returns to the original describe', async () => {
+    const { executeQuery } = await setup();
+    navButton('start').click();
+    await vi.waitFor(() => expect(title()).toBe('http://example.org/a as subject'));
+    expect(executeQuery.mock.calls.at(-1)[0]).toContain('<http://example.org/a> ?p ?o');
+    expect(navButton('back').disabled).toBe(true);
+    expect(navButton('forward').disabled).toBe(false);
+  });
+
+  it('drops the forward steps when a new IRI is Ctrl+clicked after going back', async () => {
+    const { modal } = await setup();
+    await modal.backToStart();
+    await ctrlClick('http://example.org/b');
+    await vi.waitFor(() => expect(title()).toBe('http://example.org/b as subject'));
+    expect(modal.history.map(e => e.iri)).toEqual(['http://example.org/a', 'http://example.org/b']);
+    expect(navButton('forward').disabled).toBe(true);
+  });
+
+  it('supports Alt+Left and Alt+Right', async () => {
+    await setup();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true }));
+    await vi.waitFor(() => expect(title()).toBe('http://example.org/b as subject'));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true }));
+    await vi.waitFor(() => expect(title()).toBe('http://example.org/c as object'));
+  });
+
+  it('starts a new history on a describe from outside the modal', async () => {
+    const { modal } = await setup();
+    await modal.describe('http://example.org/x', 'subject');
+    expect(modal.history).toEqual([{ iri: 'http://example.org/x', direction: 'subject' }]);
+    expect(navButton('back').disabled).toBe(true);
   });
 });

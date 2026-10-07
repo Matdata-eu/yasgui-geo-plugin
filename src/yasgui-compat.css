@@ -84,6 +84,29 @@
   color: var(--geo-describe-muted);
   font-weight: normal;
 }
+.yasgui-geo-describe-title {
+  flex: 1;
+  min-width: 0;
+}
+.yasgui-geo-describe-nav {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+.yasgui-geo-describe-nav-btn {
+  background: none;
+  border: 1px solid var(--geo-describe-border);
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 6px;
+}
+.yasgui-geo-describe-nav-btn:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
 .yasgui-geo-describe-close {
   background: none;
   border: none;

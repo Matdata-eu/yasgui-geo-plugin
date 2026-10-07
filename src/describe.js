@@ -145,7 +145,9 @@ const directionLabel = (direction) => (direction === 'object' ? 'as object' : 'a
 
 /**
  * Modal showing the triples of a described IRI. One instance is reused for
- * consecutive describes; a new describe aborts the previous one.
+ * consecutive describes; a new describe aborts the previous one. IRIs
+ * Ctrl+clicked inside the modal are kept in a history that the header's back,
+ * forward and back-to-start buttons (and Alt+←/→) walk through.
  */
 export class DescribeModal {
   /**
@@ -157,18 +159,83 @@ export class DescribeModal {
     this.doc = doc;
     this.backdrop = null;
     this.abortController = null;
+    /** @type {Array<{iri: string, direction: 'subject'|'object'}>} */
+    this.history = [];
+    this.historyIndex = -1;
     this.onKeyDown = (ev) => {
       if (ev.key === 'Escape') this.close();
+      else if (ev.altKey && ev.key === 'ArrowLeft' && this.canGoBack()) {
+        ev.preventDefault();
+        this.back();
+      } else if (ev.altKey && ev.key === 'ArrowRight' && this.canGoForward()) {
+        ev.preventDefault();
+        this.forward();
+      }
     };
   }
 
   /**
    * Fetch and show the triples where `iri` is the subject or the object.
+   * Starts a fresh navigation history with this IRI as its first entry.
    * @param {string} iri
    * @param {'subject'|'object'} direction
    * @returns {Promise<void>}
    */
-  async describe(iri, direction) {
+  describe(iri, direction) {
+    this.history = [{ iri, direction }];
+    this.historyIndex = 0;
+    return this.load();
+  }
+
+  /**
+   * Describe an IRI reached from the modal itself, adding it to the history.
+   * Entries after the current one (left by going back) are dropped.
+   * @param {string} iri
+   * @param {'subject'|'object'} direction
+   * @returns {Promise<void>}
+   */
+  navigate(iri, direction) {
+    this.history = this.history.slice(0, this.historyIndex + 1);
+    this.history.push({ iri, direction });
+    this.historyIndex = this.history.length - 1;
+    return this.load();
+  }
+
+  /** True when there is a previous entry in the history. */
+  canGoBack() {
+    return this.historyIndex > 0;
+  }
+
+  /** True when there is a next entry in the history. */
+  canGoForward() {
+    return this.historyIndex < this.history.length - 1;
+  }
+
+  /** Show the previous entry of the history. */
+  back() {
+    return this.goTo(this.historyIndex - 1);
+  }
+
+  /** Show the next entry of the history. */
+  forward() {
+    return this.goTo(this.historyIndex + 1);
+  }
+
+  /** Show the first entry of the history: the original describe. */
+  backToStart() {
+    return this.goTo(0);
+  }
+
+  /** @private */
+  goTo(index) {
+    if (index < 0 || index >= this.history.length || index === this.historyIndex) return Promise.resolve();
+    this.historyIndex = index;
+    return this.load();
+  }
+
+  /** @private Fetch and show the current history entry. */
+  async load() {
+    const { iri, direction } = this.history[this.historyIndex];
     const prefixes = getQueryPrefixes(this.yasr);
     const body = this.open(iri, direction, prefixes);
     body.appendChild(this.message('Loading…'));
@@ -242,14 +309,14 @@ export class DescribeModal {
     closeBtn.setAttribute('aria-label', 'Close');
     closeBtn.textContent = '×';
     closeBtn.addEventListener('click', () => this.close());
-    header.append(title, closeBtn);
+    header.append(this.renderNavigation(), title, closeBtn);
 
     const body = doc.createElement('div');
     body.className = 'yasgui-geo-describe-body';
 
     const footer = doc.createElement('div');
     footer.className = 'yasgui-geo-describe-footer';
-    footer.textContent = 'Ctrl+click an IRI to describe it, Ctrl+Shift+click for the triples where it is the object.';
+    footer.textContent = 'Ctrl+click an IRI to describe it, Ctrl+Shift+click for the triples where it is the object. Alt+←/→ to go back or forward.';
 
     modal.append(header, body, footer);
     backdrop.appendChild(modal);
@@ -258,6 +325,30 @@ export class DescribeModal {
     doc.addEventListener('keydown', this.onKeyDown);
     closeBtn.focus();
     return body;
+  }
+
+  /** @private Back to start, back and forward buttons. */
+  renderNavigation() {
+    const doc = this.doc;
+    const nav = doc.createElement('div');
+    nav.className = 'yasgui-geo-describe-nav';
+    const button = (cls, text, label, enabled, onClick) => {
+      const btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.className = `yasgui-geo-describe-nav-btn ${cls}`;
+      btn.textContent = text;
+      btn.title = label;
+      btn.setAttribute('aria-label', label);
+      btn.disabled = !enabled;
+      btn.addEventListener('click', onClick);
+      return btn;
+    };
+    nav.append(
+      button('yasgui-geo-describe-start', '⏮', 'Back to start', this.canGoBack(), () => this.backToStart()),
+      button('yasgui-geo-describe-back', '◀', 'Back (Alt+←)', this.canGoBack(), () => this.back()),
+      button('yasgui-geo-describe-forward', '▶', 'Forward (Alt+→)', this.canGoForward(), () => this.forward()),
+    );
+    return nav;
   }
 
   /** @private */
@@ -329,7 +420,7 @@ export class DescribeModal {
       a.addEventListener('click', (ev) => {
         if (!isDescribeClick(ev)) return;
         ev.preventDefault();
-        this.describe(term.value, describeDirection(ev));
+        this.navigate(term.value, describeDirection(ev));
       });
       return a;
     }
