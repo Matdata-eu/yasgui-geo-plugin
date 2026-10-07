@@ -101,6 +101,12 @@ any IRI in a feature popup, and on IRIs inside the describe dialog itself.
 The triples are fetched with a background `SELECT` query through
 `yasr.executeQuery` (limited to 1000 rows), so the map keeps its results.
 IRIs are abbreviated with the prefixes declared in the main query.
+
+The dialog remembers the IRIs reached by Ctrl+clicking inside it. Its ◀ and ▶
+buttons (or Alt+← and Alt+→) step back and forward through them, and ⏮
+returns to the IRI the describe started from. Ctrl+clicking after going back
+drops the forward steps, like a browser.
+
 ## Labels
 
 A feature's label is taken from `?wktLabel`, `?label`, `?name` or `?title`
