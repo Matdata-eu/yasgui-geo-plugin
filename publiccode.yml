@@ -1,0 +1,50 @@
+publiccodeYmlVersion: '0'
+name: YASGUI Geo Plugin
+url: https://github.com/Matdata-eu/yasgui-geo-plugin
+landingURL: https://matdata-eu.github.io/yasgui-geo-plugin/
+isBasedOn: https://github.com/Thib-G/yasgui-geo-tg
+softwareVersion: 1.2.0
+releaseDate: '2026-10-07'
+platforms:
+- web
+categories:
+- geographic-information-systems
+- data-visualization
+- data-analytics
+developmentStatus: stable
+softwareType: addon
+organisation:
+  uri: https://matdata.eu
+  name: Matdata
+intendedAudience:
+  scope:
+  - government
+  - science-and-technology
+  - infrastructures
+  - transportation
+description:
+  en:
+    shortDescription: Shows geometries from SPARQL results on a Leaflet map in YASGUI and MatGUI.
+    longDescription: |
+      This plugin shows the geometries in a SPARQL result directly on a map, so spatial Linked Data can be checked without exporting it to a GIS.
+
+      It renders WKT, GeoJSON, GML, GeoHash and latitude/longitude columns, and reprojects coordinates on the fly. It offers marker clustering, a heatmap, drawing tools that produce a GeoSPARQL filter, a time slider and export to GeoJSON, KML, CSV or PNG. It works in YASGUI and in MatGUI, where it is included by default.
+    documentation: https://github.com/Matdata-eu/yasgui-geo-plugin#readme
+    features:
+    - WKT, GeoJSON, GML, GeoHash and lat/lon rendering
+    - On-the-fly reprojection with proj4
+    - Marker clustering and heatmap
+    - Drawing tools that produce a GeoSPARQL filter
+    - Export to GeoJSON, KML, CSV or PNG
+legal:
+  license: MIT
+  mainCopyrightOwner: Thibaut Goelff and Matdata
+maintenance:
+  type: internal
+  contacts:
+  - name: Mathias Vanden Auweele
+    affiliation: Matdata
+localisation:
+  localisationReady: false
+  availableLanguages:
+  - en
