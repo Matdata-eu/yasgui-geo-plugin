@@ -3,7 +3,10 @@
   Geo Plugin Standalone Demo
 
   This demo runs the geo plugin independently without YASGUI.
-  It uses mock SPARQL results to demonstrate all plugin features.
+  It uses mock SPARQL results to demonstrate all plugin features, and a mock
+  yasr that can either behave like today's published @matdata/yasgui (settings
+  as map controls, own describe modal) or offer the yasr host API of the new
+  MatGUI (plugin toolbar and shared describe panel).
 
   To develop locally: npm run dev (http://localhost:3000)
 -->
@@ -72,20 +75,127 @@
       border-left: 3px solid #1976d2;
     }
 
-    #demo-container {
+    #demo-layout {
       flex: 1;
+      display: flex;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    #demo-frame {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
       background: white;
       border-radius: 4px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #demo-container {
+      flex: 1;
       overflow: hidden;
       position: relative;
       min-height: 0;
+    }
+
+    /* Stand-in for the host's styling of the shared plugin toolbar classes
+       (MatGUI yasr ships the real one). */
+    .yasr_pluginToolbar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #e3e7ec;
+      font-family: Barlow, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 14px;
+      color: #1c2633;
+    }
+
+    .yasr_pluginToolbar:empty {
+      display: none;
+    }
+
+    .yasr_toolbarButton,
+    .yasr_toolbarSelect {
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+      border: 1px solid #808893;
+      border-radius: 8px;
+      background: #fff;
+      color: inherit;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .yasr_toolbarButton[aria-pressed="true"],
+    .yasr_toolbarButton.is-active {
+      background: #e3eefa;
+      border-color: #0563bb;
+      color: #044a8c;
+    }
+
+    .yasr_toolbarSelect select {
+      border: none;
+      background: transparent;
+      font: inherit;
+      color: inherit;
+    }
+
+    .yasr_toolbarGroup {
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .yasr_toolbarSpacer {
+      flex: 1;
+    }
+
+    #demo-describe {
+      width: 340px;
+      flex-shrink: 0;
+      padding: 16px;
+      background: white;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    #demo-describe[hidden] {
+      display: none;
+    }
+
+    #demo-describe header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #56606c;
+    }
+
+    #demo-describe button {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+    }
+
+    #demo-describe code {
+      display: block;
+      margin: 12px 0;
+      color: #0563bb;
     }
   </style>
 </head>
 
 <body>
-  <h1>🌍 Geo Plugin Standalone Demo</h1>
+  <h1>Geo plugin standalone demo</h1>
 
   <div class="controls-bar">
     <label>
@@ -102,12 +212,34 @@
       </select>
     </label>
 
+    <label>
+      Host:
+      <select id="host-selector">
+        <option value="legacy">Published yasgui (settings on the map)</option>
+        <option value="host">MatGUI host API (plugin toolbar)</option>
+      </select>
+    </label>
+
     <div class="info">
-      💡 This demo runs the plugin standalone without YASGUI
+      This demo runs the plugin standalone, with a mock yasr instead of YASGUI
     </div>
   </div>
 
-  <div id="demo-container"></div>
+  <div id="demo-layout">
+    <div id="demo-frame">
+      <div class="yasr_pluginToolbar" id="demo-toolbar"></div>
+      <div id="demo-container"></div>
+    </div>
+    <aside id="demo-describe" aria-label="Describe panel" hidden>
+      <header>
+        <span id="demo-describe-from"></span>
+        <button type="button" id="demo-describe-close" aria-label="Close">Close</button>
+      </header>
+      <code id="demo-describe-iri"></code>
+      <p id="demo-describe-direction"></p>
+      <p>In MatGUI the shared describe panel lists the triples here. This mock only shows what the plugin asked for.</p>
+    </aside>
+  </div>
 
   <script type="module">
     import GeoPlugin from '../index.js';
@@ -63676,18 +63808,56 @@
     // ── Plugin initialisation ────────────────────────────────────────────────
 
     const container = document.getElementById('demo-container');
+    const toolbarEl = document.getElementById('demo-toolbar');
+    const describeEl = document.getElementById('demo-describe');
     let currentDataset = 'stations';
+    let currentHost = 'legacy';
+
+    document.getElementById('demo-describe-close').addEventListener('click', () => { describeEl.hidden = true; });
+
+    // A mock yasr. 'legacy' behaves like today's published @matdata/yasgui:
+    // the plugin draws its settings as map controls and its own describe
+    // modal. 'host' offers the yasr host API (version 1) of the new MatGUI:
+    // a plugin toolbar slot and a shared describe panel.
+    const createYasr = (host) => {
+      const yasr = {
+        config: { plugins: { geo: {} } },
+        results: { json: mockData[currentDataset] },
+        resultsEl: container,
+      };
+      if (host === 'host') {
+        Object.assign(yasr, {
+          hostApi: { version: 1, describe: true, toolbar: true },
+          getPluginToolbar: () => toolbarEl,
+          describe: async (iri, { direction = 'outgoing', source } = {}) => {
+            document.getElementById('demo-describe-from').textContent = source ? `Opened from ${source}` : '';
+            document.getElementById('demo-describe-iri').textContent = iri;
+            document.getElementById('demo-describe-direction').textContent = direction === 'incoming'
+              ? 'Incoming: triples where it is the object'
+              : 'Outgoing: triples where it is the subject';
+            describeEl.hidden = false;
+          },
+        });
+      }
+      return yasr;
+    };
 
     // Reuse a single plugin/map across dataset switches, mirroring how YASGUI
     // keeps one plugin instance and calls draw() on each new result set. This
     // makes fit-to-data re-run per dataset instead of restoring a stale
-    // permalink view from a previously fitted dataset.
-    const mockYasr = {
-      config: { plugins: { geo: {} } },
-      results: { json: mockData[currentDataset] },
-      resultsEl: container,
+    // permalink view from a previously fitted dataset. Switching the host
+    // starts a new plugin, as a page load would.
+    let mockYasr;
+    let plugin;
+    const createPlugin = () => {
+      plugin?.toolbar?.destroy();
+      plugin?.map?.remove();
+      container.textContent = '';
+      toolbarEl.textContent = '';
+      describeEl.hidden = true;
+      mockYasr = createYasr(currentHost);
+      plugin = new GeoPlugin(mockYasr);
     };
-    const plugin = new GeoPlugin(mockYasr);
 
     // Larger datasets live in demo/data and are fetched on first use.
     const lazyData = {
@@ -63700,14 +63870,23 @@
       // was written; drop it so the next dataset fits to its own geometry.
       history.replaceState(null, '', location.pathname + location.search);
       mockYasr.results.json = mockData[key];
+      // yasr empties the plugin toolbar slot before every draw().
+      toolbarEl.textContent = '';
       await plugin.draw();
-      console.log(`✅ Loaded dataset: ${key}`);
+      console.log(`Loaded dataset: ${key} (${currentHost} host)`);
     }
 
+    createPlugin();
     await loadDataset(currentDataset);
 
     document.getElementById('dataset-selector').addEventListener('change', async (e) => {
       currentDataset = e.target.value;
+      await loadDataset(currentDataset);
+    });
+
+    document.getElementById('host-selector').addEventListener('change', async (e) => {
+      currentHost = e.target.value;
+      createPlugin();
       await loadDataset(currentDataset);
     });
   </script>
