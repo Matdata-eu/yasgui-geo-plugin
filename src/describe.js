@@ -5,6 +5,12 @@
 // current results stay on the map.
 //
 // All values are inserted via textContent to prevent XSS from hostile endpoints.
+//
+// Hosts that offer the shared describe panel (yasr.hostApi.describe, see
+// host.js) show describes there instead; this modal is the fallback for hosts
+// without it, such as today's published @matdata/yasgui.
+
+import { icon } from './icons.js';
 
 /** Maximum number of rows fetched per describe query. */
 export const DESCRIBE_LIMIT = 1000;
@@ -148,6 +154,12 @@ const directionLabel = (direction) => (direction === 'object' ? 'as object' : 'a
  * consecutive describes; a new describe aborts the previous one. IRIs
  * Ctrl+clicked inside the modal are kept in a history that the header's back,
  * forward and back-to-start buttons (and Alt+←/→) walk through.
+ *
+ * Only used when the host has no shared describe panel (`yasr.hostApi.describe`).
+ *
+ * @deprecated Kept as the fallback for hosts without the yasr host API; it will
+ * be removed in the next major version, when the shared describe panel of the
+ * host (`yasr.describe`) becomes the only describe UI.
  */
 export class DescribeModal {
   /**
@@ -307,7 +319,8 @@ export class DescribeModal {
     closeBtn.type = 'button';
     closeBtn.className = 'yasgui-geo-describe-close';
     closeBtn.setAttribute('aria-label', 'Close');
-    closeBtn.textContent = '×';
+    closeBtn.title = 'Close (Esc)';
+    closeBtn.appendChild(icon('x', { doc, size: 18 }));
     closeBtn.addEventListener('click', () => this.close());
     header.append(this.renderNavigation(), title, closeBtn);
 
@@ -332,11 +345,11 @@ export class DescribeModal {
     const doc = this.doc;
     const nav = doc.createElement('div');
     nav.className = 'yasgui-geo-describe-nav';
-    const button = (cls, text, label, enabled, onClick) => {
+    const button = (cls, iconName, label, enabled, onClick) => {
       const btn = doc.createElement('button');
       btn.type = 'button';
       btn.className = `yasgui-geo-describe-nav-btn ${cls}`;
-      btn.textContent = text;
+      btn.appendChild(icon(iconName, { doc }));
       btn.title = label;
       btn.setAttribute('aria-label', label);
       btn.disabled = !enabled;
@@ -344,9 +357,9 @@ export class DescribeModal {
       return btn;
     };
     nav.append(
-      button('yasgui-geo-describe-start', '⏮', 'Back to start', this.canGoBack(), () => this.backToStart()),
-      button('yasgui-geo-describe-back', '◀', 'Back (Alt+←)', this.canGoBack(), () => this.back()),
-      button('yasgui-geo-describe-forward', '▶', 'Forward (Alt+→)', this.canGoForward(), () => this.forward()),
+      button('yasgui-geo-describe-start', 'chevrons-left', 'Back to start', this.canGoBack(), () => this.backToStart()),
+      button('yasgui-geo-describe-back', 'chevron-left', 'Back (Alt+←)', this.canGoBack(), () => this.back()),
+      button('yasgui-geo-describe-forward', 'chevron-right', 'Forward (Alt+→)', this.canGoForward(), () => this.forward()),
     );
     return nav;
   }

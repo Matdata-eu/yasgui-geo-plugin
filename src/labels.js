@@ -6,6 +6,7 @@
 // - A map control toggles permanent labels on every labelled feature.
 
 import L from 'leaflet';
+import { setIcon } from './icons.js';
 
 /** Default outline color for a hovered feature. */
 export const DEFAULT_HIGHLIGHT_COLOR = '#ff1493';
@@ -132,7 +133,8 @@ export const bindFeatureLabel = (layer, properties, permanent) => {
 };
 
 /**
- * Map control toggling permanent labels.
+ * Map control toggling permanent labels. Used when the host has no plugin
+ * toolbar; with one, the Labels toolbar button replaces it.
  * @param {L.Map} map
  * @param {boolean} initial
  * @param {(on: boolean) => void} onChange
@@ -147,17 +149,12 @@ export const addLabelControl = (map, initial, onChange) => {
       const btn = document.createElement('a');
       btn.href = '#';
       btn.setAttribute('role', 'button');
-      btn.textContent = '🏷️';
-      btn.style.fontSize = '16px';
-      btn.style.textAlign = 'center';
-      btn.style.textDecoration = 'none';
-      btn.style.lineHeight = '26px';
-      btn.style.display = 'block';
+      setIcon(btn, 'tag');
       const sync = () => {
         btn.title = on ? 'Hide labels' : 'Show labels';
         btn.setAttribute('aria-label', btn.title);
         btn.setAttribute('aria-pressed', String(on));
-        btn.style.backgroundColor = on ? '#d6e9ff' : '';
+        btn.classList.toggle('is-active', on);
       };
       sync();
       btn.addEventListener('click', (e) => {

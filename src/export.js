@@ -1,6 +1,7 @@
 // Result-export helpers: GeoJSON, KML, CSV-with-WKT.
 
 import { toPng } from 'html-to-image';
+import { setIcon } from './icons.js';
 
 const escapeXml = (s) => String(s).replace(/[<>&'"]/g, c => ({
   '<': '&lt;', '>': '&gt;', '&': '&amp;', '\'': '&apos;', '"': '&quot;',
@@ -121,8 +122,57 @@ export const downloadMapPNG = async (map, filename = 'map.png', renderer = toPng
 };
 
 /**
+ * The export actions offered by the export menu, in menu order.
+ * @param {L.Map} map
+ * @param {() => GeoJSON.FeatureCollection} getFeatureCollection
+ * @returns {Array<{ label: string, title?: string, run: () => unknown }>}
+ */
+export const getExportActions = (map, getFeatureCollection) => [
+  { label: 'Copy GeoJSON', title: 'Copy GeoJSON to clipboard', run: () => copyGeoJSONToClipboard(getFeatureCollection()) },
+  { label: 'Save as GeoJSON', title: 'Download GeoJSON file', run: () => triggerDownload('results.geojson', toGeoJSON(getFeatureCollection()), 'application/geo+json') },
+  { label: 'Save as PNG', title: 'Download the current map as PNG', run: () => downloadMapPNG(map) },
+  { label: 'Save as KML', run: () => triggerDownload('results.kml', toKML(getFeatureCollection()), 'application/vnd.google-earth.kml+xml') },
+  { label: 'Save as CSV', run: () => triggerDownload('results.csv', toCSV(getFeatureCollection()), 'text/csv') },
+];
+
+/**
+ * The export menu: one button per action. `onDone` runs after an action is
+ * picked, so the caller can close the menu.
+ * @param {L.Map} map
+ * @param {() => GeoJSON.FeatureCollection} getFeatureCollection
+ * @param {() => void} [onDone]
+ * @param {Document} [doc]
+ * @returns {HTMLElement}
+ */
+export const createExportMenu = (map, getFeatureCollection, onDone = () => {}, doc = document) => {
+  const menu = doc.createElement('div');
+  menu.className = 'yasgui-geo-menu';
+  menu.setAttribute('role', 'menu');
+  for (const action of getExportActions(map, getFeatureCollection)) {
+    const b = doc.createElement('button');
+    b.type = 'button';
+    b.className = 'yasgui-geo-menu-item';
+    b.setAttribute('role', 'menuitem');
+    b.textContent = action.label;
+    if (action.title) b.title = action.title;
+    b.onclick = async (e) => {
+      e.stopPropagation();
+      onDone();
+      try {
+        await action.run();
+      } catch (error) {
+        console.warn('Geo export action failed:', error);
+      }
+    };
+    menu.append(b);
+  }
+  return menu;
+};
+
+/**
  * Add a small export dropdown control to a Leaflet map. Calls getFeatureCollection()
- * on demand to retrieve the merged feature collection at click time.
+ * on demand to retrieve the merged feature collection at click time. Used when
+ * the host has no plugin toolbar; with one, the Export toolbar menu replaces it.
  * @param {L.Map} map
  * @param {() => GeoJSON.FeatureCollection} getFeatureCollection
  */
@@ -136,78 +186,33 @@ export const addExportControl = (map, getFeatureCollection) => {
       const btn = document.createElement('a');
       btn.href = '#';
       btn.title = 'Download map data';
-      btn.textContent = '💾';
-      btn.style.fontSize = '16px';
-      btn.style.textAlign = 'center';
-      btn.style.textDecoration = 'none';
-      btn.style.lineHeight = '26px';
-      btn.style.display = 'block';
-
-      const menu = document.createElement('div');
-      menu.style.position = 'absolute';
-      menu.style.right = '0';
-      menu.style.top = '100%';
-      menu.style.background = 'var(--yasgui-bg-primary, white)';
-      menu.style.color = 'var(--yasgui-text-primary, #333)';
-      menu.style.border = '1px solid var(--yasgui-border-color, #ccc)';
-      menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-      menu.style.display = 'none';
-      menu.style.zIndex = '1000';
-      menu.style.minWidth = '140px';
-      menu.style.fontSize = '12px';
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('aria-label', 'Download map data');
+      btn.setAttribute('aria-haspopup', 'menu');
+      btn.setAttribute('aria-expanded', 'false');
+      setIcon(btn, 'download');
 
       let open = false;
+      const setOpen = (next) => {
+        open = next;
+        menu.style.display = open ? 'block' : 'none';
+        btn.setAttribute('aria-expanded', String(open));
+      };
+      const menu = createExportMenu(map, getFeatureCollection, () => setOpen(false));
+      menu.classList.add('yasgui-geo-export-menu');
+      menu.style.display = 'none';
+
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        open = !open;
-        menu.style.display = open ? 'block' : 'none';
+        setOpen(!open);
       });
-
-      const mk = (label, handler, title) => {
-        const b = document.createElement('button');
-        b.textContent = label;
-        if (title) b.title = title;
-        b.style.display = 'block';
-        b.style.width = '100%';
-        b.style.padding = '6px 12px';
-        b.style.background = 'none';
-        b.style.border = 'none';
-        b.style.textAlign = 'left';
-        b.style.cursor = 'pointer';
-        b.style.whiteSpace = 'nowrap';
-        b.style.color = 'inherit';
-        b.onmouseover = () => { b.style.background = 'var(--yasgui-bg-secondary, #f0f0f0)'; };
-        b.onmouseout = () => { b.style.background = 'none'; };
-        b.onclick = async (e) => {
-          e.stopPropagation();
-          menu.style.display = 'none';
-          open = false;
-          try {
-            await handler();
-          } catch (error) {
-            console.warn('Geo export action failed:', error);
-          }
-        };
-        return b;
-      };
-
-      menu.append(
-        mk('Copy GeoJSON', () => copyGeoJSONToClipboard(getFeatureCollection()), 'Copy GeoJSON to clipboard'),
-        mk('Save as GeoJSON', () => triggerDownload('results.geojson', toGeoJSON(getFeatureCollection()), 'application/geo+json'), 'Download GeoJSON file'),
-        mk('Save as PNG', () => downloadMapPNG(map), 'Download the current map as PNG'),
-        mk('Save as KML', () => triggerDownload('results.kml', toKML(getFeatureCollection()), 'application/vnd.google-earth.kml+xml')),
-        mk('Save as CSV', () => triggerDownload('results.csv', toCSV(getFeatureCollection()), 'text/csv')),
-      );
 
       div.append(btn, menu);
 
       // Close menu when clicking outside
       document.addEventListener('click', (e) => {
-        if (!div.contains(e.target)) {
-          menu.style.display = 'none';
-          open = false;
-        }
+        if (!div.contains(e.target)) setOpen(false);
       });
 
       L.DomEvent.disableClickPropagation(div);

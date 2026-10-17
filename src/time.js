@@ -1,4 +1,5 @@
 import L from 'leaflet';
+import { icon } from './icons.js';
 
 export const DEFAULT_TIME_BINDINGS = ['time', 'date', 'datetime', 'timestamp', 'start', 'startDate'];
 
@@ -60,19 +61,15 @@ export const addTimeSliderControl = (map, values, selectedTime, onSelect) => {
     options: { position: 'bottomleft' },
     onAdd() {
       const div = L.DomUtil.create('div', 'leaflet-bar yasgui-geo-time');
-      div.style.background = 'white';
-      div.style.padding = '6px';
-      div.style.display = 'grid';
-      div.style.gridTemplateColumns = 'auto 1fr';
-      div.style.gap = '4px';
-      div.style.alignItems = 'center';
-      div.style.minWidth = '220px';
-      div.style.fontSize = '12px';
-
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = 'Play';
+      button.className = 'yasgui-geo-time-play';
       button.title = 'Play time animation';
+      const setPlaying = (playing) => {
+        button.replaceChildren(icon(playing ? 'pause' : 'play'), document.createTextNode(playing ? 'Pause' : 'Play'));
+        button.setAttribute('aria-pressed', String(playing));
+      };
+      setPlaying(false);
 
       const input = document.createElement('input');
       input.type = 'range';
@@ -82,7 +79,7 @@ export const addTimeSliderControl = (map, values, selectedTime, onSelect) => {
       input.value = String(Math.max(0, sorted.indexOf(selectedTime)));
 
       const label = document.createElement('span');
-      label.style.gridColumn = '1 / span 2';
+      label.className = 'yasgui-geo-time-label';
       const updateLabel = () => { label.textContent = formatTimeLabel(sorted[Number(input.value)]); };
       const select = () => onSelect(sorted[Number(input.value)]);
 
@@ -94,10 +91,10 @@ export const addTimeSliderControl = (map, values, selectedTime, onSelect) => {
         if (playTimer) {
           clearInterval(playTimer);
           playTimer = null;
-          button.textContent = 'Play';
+          setPlaying(false);
           return;
         }
-        button.textContent = 'Pause';
+        setPlaying(true);
         playTimer = setInterval(() => {
           const next = (Number(input.value) + 1) % sorted.length;
           input.value = String(next);

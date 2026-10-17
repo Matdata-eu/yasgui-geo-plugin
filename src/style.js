@@ -1,4 +1,5 @@
 import L from 'leaflet';
+import { setIcon } from './icons.js';
 
 export const DEFAULT_STYLE_STATE = {
   color: '#3388ff',
@@ -72,94 +73,109 @@ export const resolveFeatureStyle = (feature, state, fallbackColor = DEFAULT_STYL
   };
 };
 
+/**
+ * The style form: stroke colour, stroke and fill opacity, stroke thickness,
+ * marker size and a reset button. Shared by the map control and the host
+ * toolbar's view settings.
+ * @param {Object} initialState
+ * @param {(state: Object) => void} onChange - receives the normalized state
+ * @param {Document} [doc]
+ * @returns {HTMLElement}
+ */
+export const createStyleForm = (initialState, onChange, doc = document) => {
+  let state = normalizeStyleState(initialState);
+  const form = doc.createElement('div');
+  form.className = 'yasgui-geo-style-form';
+
+  const rangeInputs = {};
+  const emit = () => onChange(normalizeStyleState(state));
+  const row = (title, input) => {
+    const label = doc.createElement('label');
+    label.title = title;
+    label.className = 'yasgui-geo-field';
+    const span = doc.createElement('span');
+    span.textContent = title;
+    label.append(span, input);
+    return label;
+  };
+  const range = (title, key, min, max, step) => {
+    const input = doc.createElement('input');
+    input.type = 'range';
+    input.min = String(min);
+    input.max = String(max);
+    input.step = String(step);
+    input.value = String(state[key]);
+    input.oninput = () => { state = { ...state, [key]: Number(input.value) }; emit(); };
+    rangeInputs[key] = input;
+    return row(title, input);
+  };
+  const colorInput = doc.createElement('input');
+  colorInput.type = 'color';
+  colorInput.value = state.color;
+  colorInput.oninput = () => { state = { ...state, color: colorInput.value }; emit(); };
+
+  const resetBtn = doc.createElement('button');
+  resetBtn.type = 'button';
+  resetBtn.className = 'yasgui-geo-reset';
+  resetBtn.textContent = 'Reset defaults';
+  resetBtn.onclick = () => {
+    state = { ...DEFAULT_STYLE_STATE };
+    colorInput.value = state.color;
+    for (const [key, input] of Object.entries(rangeInputs)) {
+      input.value = String(state[key]);
+    }
+    emit();
+  };
+
+  form.append(
+    row('Stroke colour', colorInput),
+    range('Stroke opacity', 'opacity', 0, 1, 0.05),
+    range('Fill opacity', 'fillOpacity', 0, 1, 0.05),
+    range('Stroke thickness', 'weight', 0, 12, 1),
+    range('Marker size', 'radius', 1, 30, 1),
+    resetBtn,
+  );
+  return form;
+};
+
+/**
+ * Map control with the style form behind a toggle button. Used when the host
+ * has no plugin toolbar; with one, the form moves into View settings.
+ * @param {L.Map} map
+ * @param {Object} initialState
+ * @param {(state: Object) => void} onChange
+ * @returns {L.Control}
+ */
 export const addStyleControl = (map, initialState, onChange) => {
   const Control = L.Control.extend({
     options: { position: 'topleft' },
     onAdd() {
-      let state = normalizeStyleState(initialState);
       const div = L.DomUtil.create('div', 'leaflet-bar yasgui-geo-style');
 
       // Toggle button (always visible)
       const toggle = document.createElement('a');
       toggle.href = '#';
       toggle.title = 'Style options';
-      toggle.textContent = '🎨';
-      toggle.style.fontSize = '16px';
-      toggle.style.textAlign = 'center';
-      toggle.style.textDecoration = 'none';
-      toggle.style.lineHeight = '26px';
-      toggle.style.display = 'block';
+      toggle.setAttribute('role', 'button');
+      toggle.setAttribute('aria-label', 'Style options');
+      toggle.setAttribute('aria-expanded', 'false');
+      setIcon(toggle, 'palette');
 
       // Collapsible panel (hidden by default)
       const panel = document.createElement('div');
+      panel.className = 'yasgui-geo-control-panel';
       panel.style.display = 'none';
-      panel.style.padding = '6px';
-      panel.style.gap = '4px';
-      panel.style.fontSize = '12px';
-      panel.style.background = '#fff';
-      panel.style.borderTop = '1px solid #ccc';
 
       let panelOpen = false;
       toggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         panelOpen = !panelOpen;
-        panel.style.display = panelOpen ? 'grid' : 'none';
+        panel.style.display = panelOpen ? 'block' : 'none';
+        toggle.setAttribute('aria-expanded', String(panelOpen));
       });
 
-      const rangeInputs = {};
-
-      const emit = () => onChange(normalizeStyleState(state));
-      const row = (title, input) => {
-        const label = document.createElement('label');
-        label.title = title;
-        label.style.display = 'grid';
-        label.style.gap = '2px';
-        const span = document.createElement('span');
-        span.textContent = title;
-        label.append(span, input);
-        return label;
-      };
-      const range = (title, key, min, max, step) => {
-        const input = document.createElement('input');
-        input.type = 'range';
-        input.min = String(min);
-        input.max = String(max);
-        input.step = String(step);
-        input.value = String(state[key]);
-        input.oninput = () => { state = { ...state, [key]: Number(input.value) }; emit(); };
-        rangeInputs[key] = input;
-        return row(title, input);
-      };
-      const colorInput = document.createElement('input');
-      colorInput.type = 'color';
-      colorInput.value = state.color;
-      colorInput.oninput = () => { state = { ...state, color: colorInput.value }; emit(); };
-
-      const resetBtn = document.createElement('button');
-      resetBtn.type = 'button';
-      resetBtn.textContent = 'Reset defaults';
-      resetBtn.style.marginTop = '4px';
-      resetBtn.style.fontSize = '11px';
-      resetBtn.style.cursor = 'pointer';
-      resetBtn.onclick = () => {
-        state = { ...DEFAULT_STYLE_STATE };
-        colorInput.value = state.color;
-        for (const [key, input] of Object.entries(rangeInputs)) {
-          input.value = String(state[key]);
-        }
-        emit();
-      };
-
-      panel.append(
-        row('Stroke color', colorInput),
-        range('Stroke opacity', 'opacity', 0, 1, 0.05),
-        range('Fill opacity', 'fillOpacity', 0, 1, 0.05),
-        range('Stroke thickness', 'weight', 0, 12, 1),
-        range('Marker size', 'radius', 1, 30, 1),
-        resetBtn,
-      );
-
+      panel.append(createStyleForm(initialState, onChange));
       div.append(toggle, panel);
       L.DomEvent.disableClickPropagation(div);
       L.DomEvent.disableScrollPropagation(div);

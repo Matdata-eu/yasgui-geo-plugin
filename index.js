@@ -21,6 +21,9 @@ import { bindHashState } from './src/permalink.js';
 import { addCoordinateDisplay, addMeasureControl } from './src/controls.js';
 import { addStyleControl, getStyleStorageKey, loadStyleState, saveStyleState, resolveFeatureStyle } from './src/style.js';
 import { addTimeSliderControl, collectTimeValues, filterFeatureCollectionByTime } from './src/time.js';
+import { DESCRIBE_SOURCE, getHostToolbar, hasHostDescribe, hasHostToolbar, toHostDirection, toPluginDirection } from './src/host.js';
+import { buildToolbar } from './src/toolbar.js';
+import { icon, setIcon } from './src/icons.js';
 
 // Known SRID proj4 definitions. Add more as needed.
 const SRID_PROJ = {
@@ -403,6 +406,17 @@ const computeRobustFitBounds = (featureBounds) => {
  * Default plugin options. Override per-instance via Yasgui config:
  *   yasr: { plugins: { geo: { ...overrides } } }
  */
+/**
+ * Point display modes cycled by the map's display-mode button (fallback UI
+ * when the host has no plugin toolbar). Each entry shows its own icon and
+ * names the next mode in its title.
+ */
+const DISPLAY_MODES = [
+  { mode: 'heatmap', icon: 'flame', label: 'Heatmap', title: 'Switch to cluster view' },
+  { mode: 'cluster', icon: 'group', label: 'Clustered points', title: 'Disable grouping (show all)' },
+  { mode: 'all', icon: 'map-pin', label: 'All points', title: 'Switch to heatmap view' },
+];
+
 const DEFAULT_OPTIONS = {
   latLonAutoDetect: true,
   defaultColor: '#3388ff',
@@ -504,7 +518,23 @@ class GeoPlugin {
   async draw() {
     this.updateColumns();
     this._mapFitted = false;
-    await this.updateMap();
+    // updateMap() builds the map and its toolbar synchronously before its
+    // first await, so the toolbar can be put into the host's slot right away
+    // instead of after the geometries are parsed. yasr empties the slot
+    // before every draw(), hence the mount on each draw.
+    const updating = this.updateMap();
+    this._mountToolbar();
+    await updating;
+  }
+
+  /**
+   * Put the plugin toolbar into the host's toolbar slot, when the host has one.
+   * @private
+   */
+  _mountToolbar() {
+    if (!this.toolbar) return;
+    const bar = getHostToolbar(this.yasr);
+    if (bar) this.toolbar.mount(bar);
   }
 
   /**
@@ -532,22 +562,32 @@ class GeoPlugin {
       const initialBasemap = basemaps[initialBasemapName] || Object.values(basemaps)[0];
       initialBasemap.addTo(map);
       const tileOverlays = buildBasemaps(opts.tileOverlays || builtInOverlayFactories);
-      this.layerControl = L.control.layers(basemaps, tileOverlays).addTo(map);
+      // With a host toolbar the background map is picked in the toolbar, so
+      // the layers control only lists the overlays (tile overlays and one
+      // entry per geometry column). Without one it works as it always did.
+      const useHostToolbar = hasHostToolbar(this.yasr);
+      if (useHostToolbar) {
+        // Keep background maps under the overlays the layers control numbers from 1.
+        for (const layer of Object.values(basemaps)) layer.setZIndex?.(0);
+      }
+      this.layerControl = L.control.layers(useHostToolbar ? {} : basemaps, tileOverlays).addTo(map);
       this.map = map;
+      this.basemaps = basemaps;
       this.columnLayers = new Map();
       this._featureCollections = new Map();
+      const getFeatureCollection = () => ({
+        type: 'FeatureCollection',
+        features: Array.from(this._featureCollections.values())
+          .flatMap(fc => fc.features || []),
+      });
       if (opts.drawing) {
         const bindings = this.yasr?.results?.json?.results?.bindings ?? [];
         const geomCol = this.geometryColumns[0]?.colName;
         const crs = geomCol ? detectWktCRS(bindings, geomCol) : null;
-        enableDrawing(map, { crs });
+        this.drawing = enableDrawing(map, { crs, toolbar: !useHostToolbar });
       }
-      if (opts.exportControl) {
-        addExportControl(map, () => ({
-          type: 'FeatureCollection',
-          features: Array.from(this._featureCollections.values())
-            .flatMap(fc => fc.features || []),
-        }));
+      if (opts.exportControl && !useHostToolbar) {
+        addExportControl(map, getFeatureCollection);
       }
       if (opts.permalink) {
         this.hashState = bindHashState(map, {
@@ -571,39 +611,59 @@ class GeoPlugin {
       }
       if (opts.showCoordinates) addCoordinateDisplay(map);
       if (opts.measure) addMeasureControl(map);
-      if (opts.styleControl) {
-        addStyleControl(map, this.styleState, (nextStyle) => {
-          this.styleState = saveStyleState(this.styleStorageKey, nextStyle);
-          this.updateMap();
+      const onStyleChange = (nextStyle) => {
+        this.styleState = saveStyleState(this.styleStorageKey, nextStyle);
+        this.updateMap();
+      };
+      const onLabelsChange = (on) => {
+        this._showLabels = on;
+        this.updateMap();
+      };
+      const onSimplifyChange = (tolerance) => {
+        this.options.simplifyTolerance = tolerance;
+        this.updateMap();
+      };
+      const simplifyOptions = { max: opts.simplifyMaxTolerance, step: opts.simplifyStep };
+      if (useHostToolbar) {
+        this.toolbar = buildToolbar({
+          basemaps: {
+            names: Object.keys(basemaps),
+            getCurrent: () => Object.keys(basemaps).find(name => map.hasLayer(basemaps[name])) ?? initialBasemapName,
+            select: (name) => this._selectBasemap(name),
+          },
+          displayMode: opts.heatmapControl ? {
+            get: () => this._displayMode,
+            set: (mode) => { this._displayMode = mode; this.updateMap(); },
+          } : null,
+          labels: opts.labelControl ? { get: () => this._showLabels, set: onLabelsChange } : null,
+          drawing: this.drawing ?? null,
+          exportMenu: opts.exportControl ? { map, getFeatureCollection } : null,
+          style: opts.styleControl ? { initial: this.styleState, onChange: onStyleChange } : null,
+          simplify: opts.simplifyControl ? { initial: opts.simplifyTolerance, options: simplifyOptions, onChange: onSimplifyChange } : null,
         });
       }
-      if (opts.heatmapControl) {
-        const DISPLAY_MODES = [
-          { mode: 'heatmap', icon: '🔥', title: 'Switch to cluster view' },
-          { mode: 'cluster', icon: '📍', title: 'Disable grouping (show all)' },
-          { mode: 'all',     icon: '📌', title: 'Switch to heatmap view' },
-        ];
+      if (opts.styleControl && !useHostToolbar) {
+        addStyleControl(map, this.styleState, onStyleChange);
+      }
+      if (opts.heatmapControl && !useHostToolbar) {
         const HeatToggle = L.Control.extend({
           options: { position: 'topleft' },
           onAdd: () => {
             const div = L.DomUtil.create('div', 'leaflet-bar yasgui-geo-heatmap-toggle');
             const btn = document.createElement('a');
             btn.href = '#';
+            btn.setAttribute('role', 'button');
             const currentEntry = () => DISPLAY_MODES.find(d => d.mode === this._displayMode) || DISPLAY_MODES[1];
             const nextEntry = () => {
               const idx = DISPLAY_MODES.findIndex(d => d.mode === this._displayMode);
               return DISPLAY_MODES[(idx + 1) % DISPLAY_MODES.length];
             };
             const syncBtn = () => {
-              btn.textContent = currentEntry().icon;
+              setIcon(btn, currentEntry().icon);
               btn.title = nextEntry().title;
+              btn.setAttribute('aria-label', `${currentEntry().label}. ${nextEntry().title}`);
             };
             syncBtn();
-            btn.style.fontSize = '16px';
-            btn.style.textAlign = 'center';
-            btn.style.textDecoration = 'none';
-            btn.style.lineHeight = '26px';
-            btn.style.display = 'block';
             btn.addEventListener('click', (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -618,20 +678,11 @@ class GeoPlugin {
         });
         new HeatToggle().addTo(map);
       }
-      if (opts.labelControl) {
-        addLabelControl(map, this._showLabels, (on) => {
-          this._showLabels = on;
-          this.updateMap();
-        });
+      if (opts.labelControl && !useHostToolbar) {
+        addLabelControl(map, this._showLabels, onLabelsChange);
       }
-      if (opts.simplifyControl) {
-        addSimplifyControl(map, opts.simplifyTolerance, {
-          max: opts.simplifyMaxTolerance,
-          step: opts.simplifyStep,
-        }, (tolerance) => {
-          this.options.simplifyTolerance = tolerance;
-          this.updateMap();
-        });
+      if (opts.simplifyControl && !useHostToolbar) {
+        addSimplifyControl(map, opts.simplifyTolerance, simplifyOptions, onSimplifyChange);
       }
     }
     this.yasr.resultsEl.appendChild(this.container);
@@ -842,15 +893,43 @@ class GeoPlugin {
   }
 
   /**
-   * Show the triples where `iri` is the subject or the object in a modal,
-   * fetched with a background query so the map keeps its results.
+   * Switch the background map (host toolbar). Fires Leaflet's
+   * `baselayerchange`, as the layers control does, so the permalink follows.
+   * @param {string} name - a key of the basemaps
+   * @private
+   */
+  _selectBasemap(name) {
+    const next = this.basemaps?.[name];
+    if (!next || !this.map) return;
+    for (const [other, layer] of Object.entries(this.basemaps)) {
+      if (other !== name && this.map.hasLayer(layer)) this.map.removeLayer(layer);
+    }
+    if (!this.map.hasLayer(next)) next.addTo(this.map);
+    this.map.fire('baselayerchange', { layer: next, name });
+  }
+
+  /**
+   * Show the triples where `iri` is the subject or the object, fetched with a
+   * background query so the map keeps its results. Hosts with the yasr host
+   * API show them in their shared describe panel (`yasr.describe`); other
+   * hosts get the plugin's own modal.
    * @param {string} iri
-   * @param {'subject'|'object'} direction
+   * @param {'subject'|'object'|'outgoing'|'incoming'} [direction] - default 'subject' (outgoing)
    * @returns {Promise<void>}
    */
   describe(iri, direction) {
+    if (hasHostDescribe(this.yasr)) {
+      try {
+        return Promise.resolve(this.yasr.describe(iri, {
+          direction: toHostDirection(direction),
+          source: DESCRIBE_SOURCE,
+        }));
+      } catch (error) {
+        console.warn('yasgui-geo-plugin: yasr.describe() failed, using the plugin modal', error);
+      }
+    }
     if (!this.describeModal) this.describeModal = new DescribeModal(this.yasr);
-    return this.describeModal.describe(iri, direction);
+    return this.describeModal.describe(iri, toPluginDirection(direction));
   }
 
   /**
@@ -858,12 +937,13 @@ class GeoPlugin {
    * @returns {HTMLElement}
    */
   getIcon() {
-    const icon = document.createElement('div');
-    icon.innerHTML = '🌍';
-    icon.setAttribute('role', 'img');
-    icon.setAttribute('aria-label', 'Geo map view');
-    icon.title = 'Geo map view';
-    return icon;
+    const el = document.createElement('div');
+    el.className = 'yasgui-geo-plugin-icon';
+    el.appendChild(icon('map'));
+    el.setAttribute('role', 'img');
+    el.setAttribute('aria-label', 'Geo map view');
+    el.title = 'Geo map view';
+    return el;
   }
 
   /**
