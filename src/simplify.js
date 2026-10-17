@@ -3,6 +3,7 @@
 
 import simplify from '@turf/simplify';
 import L from 'leaflet';
+import { setIcon } from './icons.js';
 
 export const normalizeSimplifyTolerance = (value, max = 0.05) => {
   const num = Number(value);
@@ -35,9 +36,44 @@ export const simplifyFeatureCollection = (fc, tolerance) => {
   return { ...fc, features };
 };
 
-export const addSimplifyControl = (map, initialTolerance, options, onChange) => {
+/**
+ * The simplification tolerance slider with its live readout. Shared by the
+ * map control and the host toolbar's view settings.
+ * @param {number} initialTolerance
+ * @param {{ max?: number, step?: number }} options
+ * @param {(tolerance: number) => void} onChange
+ * @param {Document} [doc]
+ * @returns {HTMLLabelElement}
+ */
+export const createSimplifyField = (initialTolerance, options, onChange, doc = document) => {
   const max = Number(options?.max) || 0.05;
   const step = Number(options?.step) || 0.0001;
+  const label = doc.createElement('label');
+  label.title = 'Simplification tolerance';
+  label.className = 'yasgui-geo-field yasgui-geo-simplify-field';
+  const text = doc.createElement('span');
+  const input = doc.createElement('input');
+  input.type = 'range';
+  input.min = '0';
+  input.max = String(max);
+  input.step = String(step);
+  input.value = String(normalizeSimplifyTolerance(initialTolerance, max));
+  const updateText = () => { text.textContent = `Simplify ${Number(input.value).toFixed(4)}`; };
+  input.oninput = () => {
+    updateText();
+    onChange(normalizeSimplifyTolerance(input.value, max));
+  };
+  updateText();
+  label.append(text, input);
+  return label;
+};
+
+/**
+ * Map control with the simplification slider behind a toggle button. Used
+ * when the host has no plugin toolbar; with one, the slider moves into View
+ * settings.
+ */
+export const addSimplifyControl = (map, initialTolerance, options, onChange) => {
   const Control = L.Control.extend({
     options: { position: 'topleft' },
     onAdd() {
@@ -47,20 +83,15 @@ export const addSimplifyControl = (map, initialTolerance, options, onChange) => 
       const toggle = document.createElement('a');
       toggle.href = '#';
       toggle.title = 'Simplification tolerance';
-      toggle.textContent = '〰';
-      toggle.style.fontSize = '16px';
-      toggle.style.textAlign = 'center';
-      toggle.style.textDecoration = 'none';
-      toggle.style.lineHeight = '26px';
-      toggle.style.display = 'block';
+      toggle.setAttribute('role', 'button');
+      toggle.setAttribute('aria-label', 'Simplification tolerance');
+      toggle.setAttribute('aria-expanded', 'false');
+      setIcon(toggle, 'spline');
 
       // Collapsible panel (hidden by default)
       const panel = document.createElement('div');
+      panel.className = 'yasgui-geo-control-panel';
       panel.style.display = 'none';
-      panel.style.padding = '6px';
-      panel.style.fontSize = '12px';
-      panel.style.background = '#fff';
-      panel.style.borderTop = '1px solid #ccc';
 
       let panelOpen = false;
       toggle.addEventListener('click', (e) => {
@@ -68,27 +99,10 @@ export const addSimplifyControl = (map, initialTolerance, options, onChange) => 
         e.stopPropagation();
         panelOpen = !panelOpen;
         panel.style.display = panelOpen ? 'block' : 'none';
+        toggle.setAttribute('aria-expanded', String(panelOpen));
       });
 
-      const label = document.createElement('label');
-      label.title = 'Simplification tolerance';
-      label.style.display = 'grid';
-      label.style.gap = '2px';
-      const text = document.createElement('span');
-      const input = document.createElement('input');
-      input.type = 'range';
-      input.min = '0';
-      input.max = String(max);
-      input.step = String(step);
-      input.value = String(normalizeSimplifyTolerance(initialTolerance, max));
-      const updateText = () => { text.textContent = `Simplify ${Number(input.value).toFixed(4)}`; };
-      input.oninput = () => {
-        updateText();
-        onChange(normalizeSimplifyTolerance(input.value, max));
-      };
-      updateText();
-      label.append(text, input);
-      panel.append(label);
+      panel.append(createSimplifyField(initialTolerance, options, onChange));
       div.append(toggle, panel);
       L.DomEvent.disableClickPropagation(div);
       L.DomEvent.disableScrollPropagation(div);

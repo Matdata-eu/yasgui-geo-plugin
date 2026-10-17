@@ -94,6 +94,9 @@
   gap: 2px;
 }
 .yasgui-geo-describe-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: 1px solid var(--geo-describe-border);
   border-radius: 4px;
@@ -101,19 +104,23 @@
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
-  padding: 4px 6px;
+  padding: 3px 4px;
 }
 .yasgui-geo-describe-nav-btn:disabled {
   cursor: default;
   opacity: 0.35;
 }
 .yasgui-geo-describe-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: inherit;
   cursor: pointer;
   font-size: 20px;
   line-height: 1;
+  padding: 2px;
 }
 .yasgui-geo-describe-body {
   overflow: auto;
@@ -152,4 +159,172 @@
 }
 .leaflet-tooltip.yasgui-geo-label::before {
   display: none;
+}
+
+/* Icons: inline Lucide SVGs drawn in currentColor */
+.yasgui-geo-icon {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.yasgui-geo-plugin-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Map controls (used when the host has no plugin toolbar, plus the controls
+   that always stay on the map) */
+.leaflet-bar a.yasgui-geo-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.leaflet-bar a.yasgui-geo-icon-btn.is-active {
+  background-color: var(--yasgui-brand-soft, #e3eefa);
+  color: var(--yasgui-brand-strong, #044a8c);
+}
+.yasgui-geo-control-panel {
+  min-width: 170px;
+  padding: 8px;
+  border-top: 1px solid var(--yasgui-line, var(--yasgui-border-color, #ccc));
+  background: var(--yasgui-surface-raised, var(--yasgui-bg-primary, #fff));
+  color: var(--yasgui-ink, var(--yasgui-text-primary, #222));
+  font-size: 12px;
+}
+.yasgui-geo-style-form {
+  display: grid;
+  gap: 6px;
+}
+.yasgui-geo-field {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+}
+.yasgui-geo-reset {
+  justify-self: start;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--yasgui-line-strong, var(--yasgui-border-color, #808893));
+  border-radius: var(--yasgui-radius-sm, 6px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.yasgui-geo-menu {
+  display: grid;
+  min-width: 150px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.yasgui-geo-menu-item {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.yasgui-geo-menu-item:hover,
+.yasgui-geo-menu-item:focus-visible {
+  background: var(--yasgui-surface-sunken, var(--yasgui-bg-secondary, #f0f0f0));
+}
+.yasgui-geo-export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1000;
+  background: var(--yasgui-surface-raised, var(--yasgui-bg-primary, #fff));
+  color: var(--yasgui-ink, var(--yasgui-text-primary, #333));
+  border: 1px solid var(--yasgui-line, var(--yasgui-border-color, #ccc));
+  box-shadow: var(--yasgui-shadow-raised, 0 2px 8px rgba(0, 0, 0, 0.2));
+  font-size: 12px;
+}
+.yasgui-geo-draw-panel,
+.leaflet-bar.yasgui-geo-time {
+  background: var(--yasgui-surface-raised, var(--yasgui-bg-primary, #fff));
+  color: var(--yasgui-ink, var(--yasgui-text-primary, #222));
+}
+.yasgui-geo-draw-panel {
+  max-width: 360px;
+  padding: 6px 8px;
+  font: 12px var(--yasgui-font-mono, monospace);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.yasgui-geo-draw-panel-title {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.leaflet-bar.yasgui-geo-time {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px;
+  align-items: center;
+  min-width: 220px;
+  padding: 6px;
+  font-size: 12px;
+}
+.yasgui-geo-time-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.yasgui-geo-time-label {
+  grid-column: 1 / span 2;
+}
+
+/* Plugin toolbar (hosts with yasr.getPluginToolbar). The host styles the
+   shared .yasr_toolbar* classes; these rules only cover the plugin's
+   popovers. */
+.yasgui-geo-tb-anchor {
+  position: relative;
+  display: inline-flex;
+}
+.yasgui-geo-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 1100;
+  min-width: 240px;
+  max-height: 70vh;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--yasgui-line, var(--yasgui-border-color, #e3e7ec));
+  border-radius: var(--yasgui-radius-md, 10px);
+  background: var(--yasgui-surface-raised, var(--yasgui-bg-primary, #fff));
+  color: var(--yasgui-ink, var(--yasgui-text-primary, #1c2633));
+  box-shadow: var(--yasgui-shadow-raised, 0 2px 4px rgba(28, 38, 51, 0.05), 0 12px 32px rgba(28, 38, 51, 0.08));
+  font-family: var(--yasgui-font-family, inherit);
+  font-size: 13px;
+}
+.yasgui-geo-popover[hidden] {
+  display: none;
+}
+.yasgui-geo-popover.yasgui-geo-menu {
+  padding: 4px 0;
+  min-width: 170px;
+}
+.yasgui-geo-popover-start {
+  left: 0;
+}
+.yasgui-geo-popover-end {
+  right: 0;
+}
+.yasgui-geo-popover-section + .yasgui-geo-popover-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--yasgui-line, var(--yasgui-border-color, #e3e7ec));
+}
+.yasgui-geo-popover-section h3 {
+  margin: 0 0 8px;
+  color: var(--yasgui-ink-muted, var(--yasgui-text-secondary, #56606c));
+  font-size: 13px;
+  font-weight: 600;
+}
+.yasgui-geo-popover .yasgui-geo-field {
+  font-size: 13px;
 }

@@ -84,12 +84,27 @@ export interface GeoPluginOptions {
   labelControl?: boolean;
 }
 
+/** Capabilities of the yasr host API (MatGUI yasr). Detected, never version-checked. */
+export interface YasrHostApi {
+  version: 1;
+  /** The host draws the shared describe panel: `yasr.describe()`. */
+  describe?: boolean;
+  /** The host offers a plugin toolbar slot: `yasr.getPluginToolbar()`. */
+  toolbar?: boolean;
+}
+
+export type DescribeDirection = 'subject' | 'object' | 'outgoing' | 'incoming';
+
 export interface YasrLike {
   results?: {
     getBindings(): Array<Record<string, { value: string; type?: string; datatype?: string }>>;
   };
   resultsEl?: HTMLElement;
   config?: { plugins?: { geo?: GeoPluginOptions } };
+  /** Present on hosts with the yasr host API; absent on today's published yasgui. */
+  hostApi?: YasrHostApi;
+  describe?(iri: string, options?: { direction?: 'outgoing' | 'incoming'; source?: string; newHistory?: boolean }): Promise<void>;
+  getPluginToolbar?(): HTMLDivElement;
 }
 
 export default class GeoPlugin {
@@ -103,5 +118,11 @@ export default class GeoPlugin {
   draw(): Promise<void>;
   canHandleResults(): boolean;
   getIcon(): HTMLElement;
+  /**
+   * Show the triples of `iri`: in the host's shared describe panel when the
+   * host has one (`yasr.hostApi.describe`), else in the plugin's own modal.
+   * `'subject'`/`'outgoing'` (default) lists the triples where it is the subject.
+   */
+  describe(iri: string, direction?: DescribeDirection): Promise<void>;
 }
 

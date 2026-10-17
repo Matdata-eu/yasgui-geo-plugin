@@ -2,6 +2,7 @@
 // (click to add vertices, double-click to finish; shows total distance in km).
 
 import L from 'leaflet';
+import { setIcon } from './icons.js';
 
 export const addCoordinateDisplay = (map) => {
   const ctl = L.control({ position: 'bottomright' });
@@ -77,10 +78,17 @@ export const addMeasureControl = (map) => {
     onAdd() {
       const div = L.DomUtil.create('div', 'leaflet-bar');
       const a = L.DomUtil.create('a', '', div);
-      a.href = '#'; a.title = 'Measure distance'; a.textContent = '📏';
-      a.style.fontSize = '16px'; a.style.textAlign = 'center';
-      a.style.textDecoration = 'none';
-      a.style.lineHeight = '26px';
+      a.href = '#';
+      a.title = 'Measure distance';
+      a.setAttribute('role', 'button');
+      a.setAttribute('aria-label', 'Measure distance');
+      setIcon(a, 'ruler');
+      const sync = () => {
+        a.setAttribute('aria-pressed', String(active));
+        a.classList.toggle('is-active', active);
+      };
+      sync();
+      map.on('dblclick', sync);
       L.DomEvent.on(a, 'click', (e) => {
         L.DomEvent.preventDefault(e);
         L.DomEvent.stopPropagation(e);
@@ -91,6 +99,7 @@ export const addMeasureControl = (map) => {
           reset();
           active = true;
         }
+        sync();
       });
       return div;
     },
