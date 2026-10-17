@@ -1,7 +1,9 @@
 # Drawing spatial filters
 
-When `options.drawing` is `true` the map gains rectangle and polygon drawing
-tools (from `leaflet-draw`). When you finish a shape, a panel appears in the
+When `options.drawing` is `true` the plugin offers rectangle and polygon
+drawing tools (from `leaflet-draw`): Rectangle, Polygon and clear buttons in
+the plugin toolbar on hosts with the yasr host API, or a small button group at
+the top left of the map on other hosts. Right-click finishes a polygon. When you finish a shape, a panel appears in the
 bottom-left of the map with a ready-to-paste GeoSPARQL filter:
 
 ```sparql

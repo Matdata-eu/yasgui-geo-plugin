@@ -27,12 +27,43 @@ This package extends the YASGUI (Yet Another SPARQL GUI) interface with geograph
 - Live **coordinate readout** and **distance-measure** tool
 - **Dark-mode-aware** default basemap
 - **Background maps** without API keys (OpenStreetMap, OSM Humanitarian, CyclOSM, OpenTopoMap, Esri imagery/topo/light/dark gray), a **None** option to hide the background, and OpenRailwayMap / place-name overlays
-- **Describe entities**: Ctrl+click (Cmd+click on macOS) a feature or an IRI in its popup to list the triples where it is the subject; add Shift for the triples where it is the object. Runs as a background query, like the table plugin
-- **Hover highlight and labels**: the hovered feature is outlined and brought to the front, its label (`?label`, `?name`, `?xLabel`, …) shows on hover, and a 🏷️ control toggles permanent labels on the map
+- **Describe entities**: Ctrl+click (Cmd+click on macOS) a feature or an IRI in its popup to list the triples where it is the subject; add Shift for the triples where it is the object. Shown in the host's shared describe panel when the host has one, else in the plugin's own modal (see [Host compatibility](#host-compatibility))
+- **Hover highlight and labels**: the hovered feature is outlined and brought to the front, its label (`?label`, `?name`, `?xLabel`, …) shows on hover, and a Labels control toggles permanent labels on the map
+- **Plugin toolbar** on hosts that offer one: background map, point display, labels, spatial filter, export and View settings sit above the map instead of on it
 - **Safe popups**: SPARQL bindings rendered as DOM (no XSS), with IRI linkification and inline image previews; long IRIs wrap, geometry literals are collapsed behind a "show more" toggle, and tall popups scroll
 - Accessibility: keyboard-focusable popups, real buttons, ARIA-labeled plugin icon
 - TypeScript declarations included
 - Configurable basemaps, default view, clustering thresholds, simplification tolerance, etc. — see [docs/options.md](docs/options.md)
+
+## Host compatibility
+
+The plugin works with both today's published Yasgui packages and the new
+MatGUI. It detects what the host offers (`yasr.hostApi`) and never checks
+version numbers.
+
+| | Hosts with the yasr host API (new MatGUI) | Other hosts (published `@matdata/yasgui`, `@zazuko/yasgui`) |
+|---|---|---|
+| Settings | Plugin toolbar above the map (`yasr.getPluginToolbar()`) | Leaflet controls on the map, as before |
+| Describe (Ctrl+click) | Host's shared describe panel (`yasr.describe(iri, { direction, source: "Map" })`) | Plugin's own describe modal |
+
+In the plugin toolbar:
+
+- **Background** select: the background map (overlays such as OpenRailwayMap and the per-column layers stay in the layers control on the map)
+- **Points** select: clustered, all points or heatmap
+- **Labels** button: permanent feature labels
+- **Rectangle**, **Polygon** and clear buttons: the spatial filter
+- **Export** menu: copy GeoJSON, or save as GeoJSON, PNG, KML or CSV
+- **View settings** (far right): style (stroke colour, opacities, thickness, marker size) and geometry simplification
+
+Zoom, the layers control (overlays), the distance measure, the coordinate
+readout, the time slider and the spatial-filter snippet stay on the map on
+every host, because they act on the map itself.
+
+The plugin's own describe modal and map settings controls are kept as the
+fallback for hosts without the host API. They are deprecated and will be
+removed in the next major version. All icons are inline
+[Lucide](https://lucide.dev) SVGs drawn in the current text colour, and the
+plugin's CSS reads the host's `--yasgui-*` theme variables with fallbacks.
 
 ## Additional documentation
 
@@ -148,7 +179,7 @@ Then run the local dev server (uses `vite`):
 npm run dev
 ```
 
-Then go to `http://localhost:5173/index.html` to see the demo. This environment will be updated while you make changes to the code. You can also add this configuration in VS Code (in .vscode/launch.json) to launch the demo directly from the debugger:
+Then go to `http://localhost:3000/index.html` to see the demo. Its **Host** select switches the mock yasr between a published-yasgui host (settings on the map, own describe modal) and a host with the yasr host API (plugin toolbar, shared describe panel). This environment will be updated while you make changes to the code. You can also add this configuration in VS Code (in .vscode/launch.json) to launch the demo directly from the debugger:
 
 ```json
 {
@@ -158,7 +189,7 @@ Then go to `http://localhost:5173/index.html` to see the demo. This environment 
           "type": "msedge",
           "request": "launch",
           "name": "Launch Demo",
-          "url": "http://localhost:5173/index.html",
+          "url": "http://localhost:3000/index.html",
           "webRoot": "${workspaceFolder}"
       }
   ]

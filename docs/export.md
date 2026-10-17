@@ -1,7 +1,8 @@
 # Exporting results
 
-The plugin adds a small **Export** control to the top-right of the map (toggle
-via `options.exportControl`, default `true`). It writes the currently displayed
+The plugin adds an **Export** menu (toggle via `options.exportControl`, default
+`true`): in the plugin toolbar on hosts with the yasr host API, or as a
+download button at the top right of the map on other hosts. It writes the currently displayed
 features to a downloaded file in one of three formats.
 
 | Format  | Filename          | Notes                                                                 |
