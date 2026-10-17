@@ -50,12 +50,30 @@ const yasgui = new Yasgui(document.getElementById('yasgui'), {
 | `highlightOnHover` | `boolean` | `true` | Outline the hovered feature and bring it to the front, so overlapping features can be told apart. |
 | `highlightColor` | `string` (CSS color) | `#ff1493` | Outline color of the hovered feature. |
 | `labels` | `boolean` | `false` | Show feature labels permanently on the map at startup. |
-| `labelControl` | `boolean` | `true` | Show the 🏷️ control that toggles permanent labels. |
+| `labelControl` | `boolean` | `true` | Show the Labels control that toggles permanent labels. |
+
+## Where the controls appear
+
+On hosts with the yasr host API (the new MatGUI) the plugin's settings sit in
+the plugin toolbar above the map; on other hosts (today's published
+`@matdata/yasgui`, `@zazuko/yasgui`) they are map controls, as before. The
+options above switch a control off in both places.
+
+| Option | Plugin toolbar (host API) | Map control (other hosts) |
+|---|---|---|
+| background map (`basemaps`) | Background select | layers control, top right |
+| `heatmapControl` | Points select (clustered, all points, heatmap) | display-mode button, top left |
+| `labelControl` | Labels button | tag button, top left |
+| `drawing` | Rectangle, Polygon and clear buttons | draw buttons, top left |
+| `exportControl` | Export menu | download button, top right |
+| `styleControl` | View settings, Style | palette button, top left |
+| `simplifyControl` | View settings, Simplify geometry | simplify button, top left |
+| `measure`, `showCoordinates`, `timeSlider`, zoom, overlays | on the map | on the map |
 
 ## Background maps
 
-The layer control (top right) offers these background maps, none of which
-needs an API key:
+The Background select (plugin toolbar) or the layer control (top right)
+offers these background maps, none of which needs an API key:
 
 | Name | Source |
 |---|---|
