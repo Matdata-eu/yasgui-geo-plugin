@@ -59,7 +59,7 @@
     "@matdata/yasgui": "^5.19.1",
     "@vitest/coverage-v8": "^4.1.7",
     "esbuild": "^0.28.0",
-    "jsdom": "^28.1.0",
+    "jsdom": "^30.1.2",
     "vite": "8.3.4",
     "vitest": "^4.1.7"
   },
