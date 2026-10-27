@@ -56,12 +56,12 @@
     "coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@matdata/yasgui": "^5.19.1",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@matdata/yasgui": "^6.10.0",
+    "@vitest/coverage-v8": "^4.1.12",
     "esbuild": "^0.28.0",
     "jsdom": "^28.1.0",
     "vite": "8.3.4",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.12"
   },
   "dependencies": {
     "@turf/helpers": "^7.3.5",
