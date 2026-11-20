@@ -24,6 +24,7 @@ import { addTimeSliderControl, collectTimeValues, filterFeatureCollectionByTime 
 import { DESCRIBE_SOURCE, getHostToolbar, hasHostDescribe, hasHostToolbar, toHostDirection, toPluginDirection } from './src/host.js';
 import { buildToolbar } from './src/toolbar.js';
 import { icon, setIcon } from './src/icons.js';
+import { featuresAt, openPicker } from './src/overlap.js';
 
 // Known SRID proj4 definitions. Add more as needed.
 const SRID_PROJ = {
@@ -453,6 +454,7 @@ const DEFAULT_OPTIONS = {
   highlightColor: DEFAULT_HIGHLIGHT_COLOR,
   labels: false,
   labelControl: true,
+  pickOverlapping: true,
 };
 
 /**
@@ -790,12 +792,27 @@ class GeoPlugin {
             if (isDescribeClick(e.originalEvent) && entity) {
               L.DomEvent.stop(e);
               this.describe(entity, describeDirection(e.originalEvent));
+              return;
+            }
+            // Several features under the click: let the user pick one.
+            const hits = opts.pickOverlapping
+              ? featuresAt(this.map, this.columnLayers, e.latlng, { clicked: layer })
+              : [];
+            if (hits.length > 1) {
+              L.DomEvent.stop(e);
+              openPicker(this.map, e.latlng, hits, {
+                popupOptions: POPUP_OPTIONS,
+                onDescribe: (iri, direction) => this.describe(iri, direction),
+                highlightColor: opts.highlightOnHover ? opts.highlightColor : null,
+              });
             } else if (typeof layer._openPopup === 'function') {
               layer._openPopup(e);
             } else {
               layer.openPopup(e.latlng);
             }
           });
+          // Swatch color in the overlap picker (the hover highlight changes options.color).
+          layer.pickerColor = resolveFeatureStyle(feature, this.styleState, DEFAULT_COLOR).color;
           bindFeatureLabel(layer, p, this._showLabels);
           if (opts.highlightOnHover) attachHoverHighlight(layer, opts.highlightColor);
         },

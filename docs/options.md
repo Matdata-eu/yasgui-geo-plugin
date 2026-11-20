@@ -51,6 +51,7 @@ const yasgui = new Yasgui(document.getElementById('yasgui'), {
 | `highlightColor` | `string` (CSS color) | `#ff1493` | Outline color of the hovered feature. |
 | `labels` | `boolean` | `false` | Show feature labels permanently on the map at startup. |
 | `labelControl` | `boolean` | `true` | Show the Labels control that toggles permanent labels. |
+| `pickOverlapping` | `boolean` | `true` | When several features lie under a click (two identical points, a point on a line, a point inside a polygon), show a popup listing them so the user picks the one to open. Ctrl+click a row to describe that feature. When `false`, a click opens the topmost feature only. |
 
 ## Where the controls appear
 

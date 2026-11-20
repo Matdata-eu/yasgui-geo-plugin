@@ -205,6 +205,7 @@
         <option value="cities">Lat/Lon Auto-detect — World Capitals</option>
         <option value="regions">WKT Polygons — European Regions</option>
         <option value="mixed">Mixed Geometry — Points, Lines &amp; Polygons</option>
+        <option value="overlapping">Overlapping features — click Leuven to pick one</option>
         <option value="geohash">GeoHash — Random Points</option>
         <option value="wktTypes">All WKT Types — Points, Lines, Polygons, Z/M/ZM, Empty, CRS</option>
         <option value="combination">Mixed EPSG in same column</option>
@@ -251,6 +252,40 @@
     // ── Mock SPARQL datasets ────────────────────────────────────────────────
 
     const mockData = {
+      // Features stacked on the same spot: two points, a line through them
+      // and a polygon around them. Clicking Leuven lists all four.
+      overlapping: {
+        head: { vars: ["s", "label", "wkt"] },
+        results: {
+          bindings: [
+            {
+              "s": { "type": "uri", "value": "http://example.org/station/Leuven" },
+              "label": { "type": "literal", "value": "Leuven station" },
+              "wkt": { "type": "literal", "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral", "value": "POINT(4.7157 50.8818)" }
+            },
+            {
+              "s": { "type": "uri", "value": "http://example.org/op/LeuvenOP" },
+              "label": { "type": "literal", "value": "Operational point Leuven" },
+              "wkt": { "type": "literal", "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral", "value": "POINT(4.7157 50.8818)" }
+            },
+            {
+              "s": { "type": "uri", "value": "http://example.org/line/L36" },
+              "label": { "type": "literal", "value": "Line 36 Brussels–Liège" },
+              "wkt": { "type": "literal", "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral", "value": "LINESTRING(4.3572 50.8466, 4.7157 50.8818, 5.0670 50.9300, 5.5733 50.6245)" }
+            },
+            {
+              "s": { "type": "uri", "value": "http://example.org/zone/Leuven" },
+              "label": { "type": "literal", "value": "Leuven maintenance zone" },
+              "wkt": { "type": "literal", "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral", "value": "POLYGON((4.62 50.84, 4.82 50.84, 4.82 50.93, 4.62 50.93, 4.62 50.84))" }
+            },
+            {
+              "s": { "type": "uri", "value": "http://example.org/station/Mechelen" },
+              "label": { "type": "literal", "value": "Mechelen station" },
+              "wkt": { "type": "literal", "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral", "value": "POINT(4.4824 51.0175)" }
+            }
+          ]
+        }
+      },
 
       // WKT POINT geometries — European train stations
       stations: {
