@@ -328,3 +328,72 @@
 .yasgui-geo-popover .yasgui-geo-field {
   font-size: 13px;
 }
+
+/* Picker listing overlapping features under a click */
+.yasgui-geo-picker {
+  min-width: 200px;
+  font-size: 12px;
+}
+.yasgui-geo-picker-header {
+  margin-bottom: 6px;
+  color: #666;
+  font-weight: 600;
+}
+.yasgui-geo-picker-list {
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.yasgui-geo-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.yasgui-geo-picker-item:hover,
+.yasgui-geo-picker-item:focus-visible {
+  background: rgba(0, 102, 204, 0.1);
+  outline: none;
+}
+.yasgui-geo-picker-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+}
+.yasgui-geo-picker-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.yasgui-geo-picker-title {
+  overflow-wrap: anywhere;
+}
+.yasgui-geo-picker-subtitle {
+  color: #666;
+  font-size: 11px;
+}
+.yasgui-geo-picker-back {
+  margin: 0 0 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #06c;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.yasgui-geo-picker-back:hover {
+  text-decoration: underline;
+}

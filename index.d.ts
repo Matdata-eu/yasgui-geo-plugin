@@ -82,6 +82,8 @@ export interface GeoPluginOptions {
   labels?: boolean;
   /** Show the map control that toggles permanent labels. Default `true`. */
   labelControl?: boolean;
+  /** When several features lie under a click, list them in a popup so the user picks one. Default `true`. */
+  pickOverlapping?: boolean;
 }
 
 /** Capabilities of the yasr host API (MatGUI yasr). Detected, never version-checked. */
