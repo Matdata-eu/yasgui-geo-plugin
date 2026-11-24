@@ -1,0 +1,169 @@
+/*
+ * Page chrome of the plugin demo, in the MatData design tokens that MatGUI
+ * defines (light and dark). The results pane below it is MatGUI's own Yasr.
+ */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--yasgui-font-family, Geist, system-ui, sans-serif);
+  font-size: 14px;
+  background: var(--yasgui-surface, #f1f4f8);
+  color: var(--yasgui-ink, #1c2633);
+}
+
+.demo-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 12px 16px;
+  background: var(--yasgui-surface-raised, #fff);
+  border-bottom: 1px solid var(--yasgui-line, #dfe5ec);
+}
+
+.demo-brand {
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.demo-brand h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.demo-brand h1 span {
+  color: var(--yasgui-brand, #0563bb);
+}
+
+.demo-brand p {
+  margin: 2px 0 0;
+  max-width: 80ch;
+  color: var(--yasgui-ink-muted, #56606c);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.demo-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--yasgui-ink-muted, #56606c);
+  font-size: 13px;
+}
+
+.demo-select,
+.demo-button {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--yasgui-line-strong, #808893);
+  border-radius: var(--yasgui-radius-button, 8px);
+  background: var(--yasgui-surface-raised, #fff);
+  color: var(--yasgui-ink, #1c2633);
+  font: inherit;
+  font-weight: 500;
+}
+
+.demo-select {
+  max-width: min(420px, 80vw);
+}
+
+.demo-button {
+  cursor: pointer;
+}
+
+.demo-button:hover,
+.demo-select:hover {
+  background: var(--yasgui-surface-sunken, #edf1f6);
+}
+
+.demo-select:focus-visible,
+.demo-button:focus-visible,
+.demo-link:focus-visible {
+  outline: 2px solid var(--yasgui-focus, #044a8c);
+  outline-offset: 2px;
+}
+
+.demo-link {
+  color: var(--yasgui-brand, #0563bb);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.demo-link:hover {
+  text-decoration: underline;
+}
+
+.demo-hint {
+  margin: 0;
+  padding: 10px 16px;
+  color: var(--yasgui-ink-body, #3a4552);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.demo-hint kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--yasgui-line, #dfe5ec);
+  border-radius: 4px;
+  background: var(--yasgui-surface-raised, #fff);
+  font-family: var(--yasgui-font-mono, monospace);
+  font-size: 12px;
+}
+
+.demo-pane {
+  position: relative;
+  flex: 1;
+  min-height: 480px;
+  margin: 0 16px 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--yasgui-surface-raised, #fff);
+  border-radius: var(--yasgui-radius-md, 10px);
+  box-shadow: var(--yasgui-shadow-sheet, 0 0 0 1px rgba(28, 38, 51, 0.05));
+}
+
+.demo-pane > .yasr {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.demo-pane > .yasr > .yasr_results {
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 640px) {
+  .demo-bar {
+    padding: 10px 12px;
+  }
+
+  .demo-pane {
+    margin: 0 8px 8px;
+  }
+
+  .demo-hint {
+    padding: 8px 12px;
+  }
+}
