@@ -180,7 +180,7 @@ Then run the local dev server (uses `vite`):
 npm run dev
 ```
 
-Then go to `http://localhost:3000/index.html` to see the demo. Its **Host** select switches the mock yasr between a published-yasgui host (settings on the map, own describe modal) and a host with the yasr host API (plugin toolbar, shared describe panel). This environment will be updated while you make changes to the code. You can also add this configuration in VS Code (in .vscode/launch.json) to launch the demo directly from the debugger:
+Then go to `http://localhost:3000/index.html` to see the demo. It shows the plugin in MatGUI's own results pane (Yasr from `@matdata/yasgui`), the way it looks in MatGUI: with the plugin toolbar, the shared describe panel and the light and dark theme. Pick a sample dataset at the top. This environment will be updated while you make changes to the code. You can also add this configuration in VS Code (in .vscode/launch.json) to launch the demo directly from the debugger:
 
 ```json
 {
